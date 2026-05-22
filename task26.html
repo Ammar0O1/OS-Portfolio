@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 26 – exit() System Call</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.7;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        a { color: #f97316; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+            color: #f97316;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        h1 span { color: #f97316; }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1rem;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 40px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        p { color: #cbd5e1; margin-bottom: 14px; font-size: 0.95rem; }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #1e293b;
+            color: #f97316;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        /* Code block */
+        .code-block {
+            background: #0d1117;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .code-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 14px;
+            background: #161b22;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .code-bar span { width: 10px; height: 10px; border-radius: 50%; }
+        .code-bar span:nth-child(1) { background: #f43f5e; }
+        .code-bar span:nth-child(2) { background: #f97316; }
+        .code-bar span:nth-child(3) { background: #22c55e; }
+
+        pre {
+            padding: 18px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.8;
+            overflow-x: auto;
+            color: #c9d1d9;
+        }
+
+        pre .kw { color: #ff7b72; }
+        pre .fn { color: #d2a8ff; }
+        pre .str { color: #a5d6ff; }
+        pre .cmt { color: #8b949e; font-style: italic; }
+        pre .num { color: #79c0ff; }
+        pre .inc { color: #ffa657; }
+
+        /* Info box */
+        .info-box {
+            background: linear-gradient(135deg, rgba(249,115,22,0.08), rgba(244,63,94,0.05));
+            border-left: 3px solid #f97316;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+        }
+
+        .info-box p { margin: 0; color: #cbd5e1; }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        th {
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td { color: #cbd5e1; }
+
+        /* Steps */
+        .steps { padding-left: 0; list-style: none; counter-reset: step; }
+
+        .steps li {
+            counter-increment: step;
+            padding: 12px 16px 12px 50px;
+            position: relative;
+            margin-bottom: 8px;
+            background: #1e293b;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        .steps li::before {
+            content: counter(step);
+            position: absolute;
+            left: 16px;
+            top: 12px;
+            width: 24px;
+            height: 24px;
+            background: #f97316;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Terminal demo */
+        .terminal {
+            background: #0d1117;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .terminal-bar {
+            display: flex; align-items: center; gap: 6px;
+            padding: 10px 14px;
+            background: #161b22;
+            border-bottom: 1px solid #1e293b;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #8b949e;
+        }
+
+        .terminal-body {
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            min-height: 180px;
+            line-height: 1.8;
+        }
+
+        .terminal-body .line { margin-bottom: 2px; opacity: 0; animation: fadeIn 0.25s forwards; }
+        .terminal-body .prompt { color: #22c55e; font-weight: 600; }
+        .terminal-body .out { color: #c9d1d9; }
+        .terminal-body .err { color: #f43f5e; }
+        .terminal-body .ok { color: #22c55e; }
+        .terminal-body .info { color: #3b82f6; }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        .demo-btns { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+
+        .demo-btns button {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 9px 18px;
+            border-radius: 8px;
+            border: 1px solid #1e293b;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        .demo-btns button:hover { background: #334155; }
+
+        .demo-btns button.primary {
+            background: #f97316;
+            border-color: #f97316;
+            color: #fff;
+        }
+
+        .demo-btns button.primary:hover { background: #ea580c; }
+
+        /* Quiz */
+        footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #1e293b;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <a href="index.html" class="back-link">← Back to Home</a>
+
+        <h1>The <span>exit()</span> System Call</h1>
+        <p class="subtitle">Task 26 — Lab & System Calls</p>
+        <p class="subtitle" style="color:#ffffff;">Name: Muslim Muhamad Osman | Topic ID: 26</p>
+
+        <!-- ===== WHAT IS EXIT ===== -->
+        <h2>What is exit()?</h2>
+        <p>
+            <code>exit()</code> is a C library function that <strong>terminates the calling process</strong>.
+            When a program is done with its work (or encounters an error it can't recover from),
+            it calls <code>exit()</code> to shut down cleanly.
+        </p>
+        <p>
+            It performs cleanup operations — like flushing output buffers and calling registered
+            cleanup handlers — then tells the kernel to remove the process.
+        </p>
+
+        <div class="info-box">
+            <p>
+                <strong>Key point:</strong> <code>exit()</code> takes an integer argument called the
+                <strong>exit status</strong>. By convention, <code>0</code> means success and
+                any non-zero value means an error occurred.
+            </p>
+        </div>
+
+        <!-- ===== SYNTAX ===== -->
+        <h2>Syntax</h2>
+
+        <div class="code-block">
+            <div class="code-bar"><span></span><span></span><span></span></div>
+            <pre><span class="inc">#include</span> <span class="str">&lt;stdlib.h&gt;</span>
+
+<span class="kw">void</span> <span class="fn">exit</span>(<span class="kw">int</span> status);</pre>
+        </div>
+
+        <p>
+            <strong>Header:</strong> <code>&lt;stdlib.h&gt;</code><br>
+            <strong>Parameter:</strong> <code>status</code> — integer sent to the parent process (only bits 0–255 are used).<br>
+            <strong>Returns:</strong> Nothing — this function <em>never</em> returns.
+        </p>
+
+        <!-- ===== CODE EXAMPLE ===== -->
+        <h2>Code Example</h2>
+
+        <div class="code-block">
+            <div class="code-bar"><span></span><span></span><span></span></div>
+            <pre><span class="inc">#include</span> <span class="str">&lt;stdio.h&gt;</span>
+<span class="inc">#include</span> <span class="str">&lt;stdlib.h&gt;</span>
+<span class="inc">#include</span> <span class="str">&lt;unistd.h&gt;</span>
+<span class="inc">#include</span> <span class="str">&lt;sys/wait.h&gt;</span>
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="kw">pid_t</span> pid = <span class="fn">fork</span>();
+
+    <span class="kw">if</span> (pid == <span class="num">0</span>) {
+        <span class="cmt">// Child process</span>
+        <span class="fn">printf</span>(<span class="str">"Child: doing work...\n"</span>);
+        <span class="fn">exit</span>(<span class="num">0</span>);  <span class="cmt">// success</span>
+    }
+
+    <span class="cmt">// Parent waits for child</span>
+    <span class="kw">int</span> status;
+    <span class="fn">wait</span>(&amp;status);
+
+    <span class="kw">if</span> (<span class="fn">WIFEXITED</span>(status))
+        <span class="fn">printf</span>(<span class="str">"Child exited with %d\n"</span>, <span class="fn">WEXITSTATUS</span>(status));
+
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+        </div>
+
+        <!-- ===== WHAT HAPPENS ===== -->
+        <h2>What Happens When exit() Is Called</h2>
+        <ol class="steps">
+            <li>Calls all cleanup functions registered with <code>atexit()</code> in reverse order</li>
+            <li>Flushes all open output buffers (e.g. <code>stdout</code>)</li>
+            <li>Closes all open file streams</li>
+            <li>Removes temporary files created by <code>tmpfile()</code></li>
+            <li>Calls the <code>_exit()</code> system call, which hands control to the kernel</li>
+            <li>Kernel frees memory, closes file descriptors, and sends <code>SIGCHLD</code> to parent</li>
+        </ol>
+
+        <!-- ===== COMMON EXIT CODES ===== -->
+        <h2>Common Exit Codes</h2>
+        <table>
+            <thead>
+                <tr><th>Code</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>0</code></td><td>Success (EXIT_SUCCESS)</td></tr>
+                <tr><td><code>1</code></td><td>General error (EXIT_FAILURE)</td></tr>
+                <tr><td><code>2</code></td><td>Misuse of command / bad arguments</td></tr>
+                <tr><td><code>126</code></td><td>Command found but not executable</td></tr>
+                <tr><td><code>127</code></td><td>Command not found</td></tr>
+                <tr><td><code>130</code></td><td>Terminated by Ctrl+C (SIGINT)</td></tr>
+                <tr><td><code>137</code></td><td>Killed with kill -9 (SIGKILL)</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ===== INTERACTIVE DEMO ===== -->
+        <h2>Interactive Demo</h2>
+        <p>Click a button to see how <code>exit()</code> behaves in different scenarios:</p>
+
+        <div class="demo-btns">
+            <button class="primary" onclick="runDemo('success')">✓ Successful Exit</button>
+            <button onclick="runDemo('error')">✗ Error Exit</button>
+            <button onclick="runDemo('cleanup')">atexit() Demo</button>
+        </div>
+
+        <div class="terminal">
+            <div class="terminal-bar">● terminal — bash</div>
+            <div class="terminal-body" id="term"></div>
+        </div>
+
+        <!-- ===== FOOTER ===== -->
+        <footer>
+            <p>Task 26 — exit() System Call &nbsp;|&nbsp; <a href="index.html">← Back to Home</a></p>
+        </footer>
+
+    </div>
+
+    <script>
+        // ===== TERMINAL DEMO =====
+        const demos = {
+            success: [
+                { t: 'cmd', s: '$ gcc exit_demo.c -o demo && ./demo' },
+                { t: 'out', s: 'Child: doing work...' },
+                { t: 'ok',  s: 'Child exited with 0' },
+                { t: 'cmd', s: '$ echo $?' },
+                { t: 'ok',  s: '0' },
+                { t: 'info', s: '→ Exit code 0 = success' },
+            ],
+            error: [
+                { t: 'cmd', s: '$ ./program_that_fails' },
+                { t: 'err', s: 'Error: could not open file' },
+                { t: 'cmd', s: '$ echo $?' },
+                { t: 'err', s: '1' },
+                { t: 'info', s: '→ Exit code 1 = general error (EXIT_FAILURE)' },
+            ],
+            cleanup: [
+                { t: 'cmd', s: '$ ./cleanup_demo' },
+                { t: 'out', s: 'Registering 3 atexit handlers...' },
+                { t: 'out', s: 'Calling exit(0)...' },
+                { t: 'ok',  s: 'Handler 3 called  (registered last → runs first)' },
+                { t: 'ok',  s: 'Handler 2 called' },
+                { t: 'ok',  s: 'Handler 1 called  (registered first → runs last)' },
+                { t: 'info', s: '→ atexit() handlers run in reverse order (LIFO)' },
+            ],
+        };
+
+        let running = false;
+
+        function runDemo(name) {
+            if (running) return;
+            running = true;
+            const el = document.getElementById('term');
+            el.innerHTML = '';
+            const lines = demos[name];
+            let i = 0;
+            function next() {
+                if (i >= lines.length) { running = false; return; }
+                const l = lines[i];
+                const div = document.createElement('div');
+                div.className = 'line';
+                div.style.animationDelay = '0s';
+                if (l.t === 'cmd') {
+                    div.innerHTML = '<span class="prompt">' + esc(l.s.substring(0,2)) + '</span>' + esc(l.s.substring(2));
+                } else {
+                    div.className = 'line ' + l.t;
+                    div.textContent = l.s;
+                }
+                el.appendChild(div);
+                i++;
+                setTimeout(next, l.t === 'cmd' ? 400 : 200);
+            }
+            next();
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    </script>
+</body>
+</html>
