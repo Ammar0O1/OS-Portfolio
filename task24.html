@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 24: fork() System Call</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .nav-link:hover {
+            background: #764ba2;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 12px;
+            font-size: 0.95em;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .keyword { color: #ff79c6; }
+        .function { color: #8be9fd; }
+        .comment { color: #6272a4; }
+
+        .diagram {
+            background: white;
+            padding: 20px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .process-box {
+            display: inline-block;
+            padding: 15px 25px;
+            margin: 10px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: #e8eaf6;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 0 15px;
+        }
+
+        .demo-section {
+            grid-column: 1 / -1;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .output {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            min-height: 250px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto;
+        }
+
+        .process-tree {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .tree-item {
+            padding: 15px;
+            border-radius: 5px;
+            margin-left: 20px;
+            border-left: 3px solid #667eea;
+        }
+
+        .parent {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .child {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+
+        .return-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .info-title {
+            font-weight: bold;
+            color: #17a2b8;
+            margin-bottom: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .timeline {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .timeline-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>fork() System Call</h1>
+            <p class="subtitle">Process Creation in Operating Systems</p>
+            <a href="index.html" class="nav-link">← Back to Home</a>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <h2>What is fork()?</h2>
+                <p>The <code>fork()</code> system call creates a new process by duplicating the calling process. The new process is called the <strong>child process</strong>, and the calling process is the <strong>parent process</strong>.</p>
+
+                <p>After a successful fork():</p>
+                <ul style="margin-left: 20px; color: #555;">
+                    <li>Parent and child have separate memory spaces</li>
+                    <li>Both continue execution from the fork() call</li>
+                    <li>They have different Process IDs (PIDs)</li>
+                    <li>Child inherits parent's resources and file descriptors</li>
+                </ul>
+
+                <div class="code-block">
+<span class="comment">// Simple fork() example</span>
+<span class="keyword">#include</span> &lt;unistd.h&gt;
+<span class="keyword">#include</span> &lt;stdio.h&gt;
+
+<span class="keyword">int</span> <span class="function">main</span>() {
+    <span class="keyword">pid_t</span> pid = <span class="function">fork</span>();
+
+    <span class="keyword">if</span> (pid == -1) {
+        <span class="function">perror</span>(<span class="string">"fork failed"</span>);
+    } <span class="keyword">else if</span> (pid == 0) {
+        <span class="comment">// Child process</span>
+        <span class="function">printf</span>(<span class="string">"Child: PID=%d\n"</span>, <span class="function">getpid</span>());
+    } <span class="keyword">else</span> {
+        <span class="comment">// Parent process</span>
+        <span class="function">printf</span>(<span class="string">"Parent: PID=%d, Child PID=%d\n"</span>,
+                <span class="function">getpid</span>(), pid);
+    }
+
+    <span class="keyword">return</span> 0;
+}
+                </span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Return Value</h2>
+                <p>The fork() call returns different values to parent and child:</p>
+
+                <table>
+                    <tr>
+                        <th>Return Value</th>
+                        <th>Meaning</th>
+                    </tr>
+                    <tr>
+                        <td><strong>&gt; 0</strong></td>
+                        <td>Parent process receives child's PID</td>
+                    </tr>
+                    <tr>
+                        <td><strong>0</strong></td>
+                        <td>Child process receives 0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>-1</strong></td>
+                        <td>Fork failed (no new process created)</td>
+                    </tr>
+                </table>
+
+                <div class="info-box">
+                    <div class="info-title">💡 Key Point</div>
+                    <p>After fork(), <strong>both processes execute the same code</strong> but have separate memory spaces. The return value is how they know whether they're parent or child.</p>
+                </div>
+
+                <h2 style="margin-top: 30px;">Why Use fork()?</h2>
+                <ul style="margin-left: 20px; color: #555;">
+                    <li>Create new processes concurrently</li>
+                    <li>Server handling multiple clients</li>
+                    <li>Process isolation and resource management</li>
+                    <li>Foundation for process-based multitasking</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Interactive fork() Simulator</h2>
+            <p style="margin-bottom: 20px;">Click the button to simulate a fork() call and see how parent and child processes are created with different return values.</p>
+
+            <div class="controls">
+                <button onclick="simulateFork()">Execute fork()</button>
+                <button onclick="clearOutput()">Clear Output</button>
+            </div>
+
+            <div class="output" id="output">Execute the fork() simulator to see process creation...</div>
+
+            <div class="process-tree" id="processTree" style="display: none;">
+                <h3 style="color: #333; margin-bottom: 15px;">Process Tree</h3>
+                <div id="treeContent"></div>
+            </div>
+        </div>
+
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2>How fork() Works (Step by Step)</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <span class="step-number">1</span>
+                    <strong>Before fork():</strong> Only parent process exists with its memory, open files, and registers.
+                </div>
+                <div class="timeline-item">
+                    <span class="step-number">2</span>
+                    <strong>fork() called:</strong> OS creates new process with duplicate of parent's memory and resources.
+                </div>
+                <div class="timeline-item">
+                    <span class="step-number">3</span>
+                    <strong>Process Control Block (PCB):</strong> OS allocates new PCB for child with unique PID.
+                </div>
+                <div class="timeline-item">
+                    <span class="step-number">4</span>
+                    <strong>Both resume:</strong> Parent receives child's PID; child receives 0. Both continue from fork() call.
+                </div>
+                <div class="timeline-item">
+                    <span class="step-number">5</span>
+                    <strong>Independent execution:</strong> Parent and child can execute different code paths based on return value.
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2>Visual Diagram: fork() Process Creation</h2>
+            <div class="diagram">
+                <div style="margin-bottom: 20px;">
+                    <strong style="color: #333;">Before fork():</strong><br>
+                    <div class="process-box" style="background: #fff3cd;">Process (PID: 1000)</div>
+                </div>
+
+                <div style="font-size: 2em; color: #667eea; margin-bottom: 20px;">⬇️ fork() called ⬇️</div>
+
+                <div>
+                    <strong style="color: #333;">After fork():</strong><br>
+                    <div style="display: inline-block;">
+                        <div class="process-box" style="background: #fff3cd;">
+                            Parent Process<br>
+                            <small>PID: 1000</small><br>
+                            <small style="color: #d9534f;">fork() returns: 1001</small>
+                        </div>
+                        <div style="display: inline-block; margin: 0 20px; font-weight: bold; color: #667eea;">+</div>
+                        <div class="process-box" style="background: #d1ecf1;">
+                            Child Process<br>
+                            <small>PID: 1001</small><br>
+                            <small style="color: #5cb85c;">fork() returns: 0</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2>Common Fork() Patterns</h2>
+
+            <h3 style="color: #667eea; margin-top: 20px;">Pattern 1: Server Handling Multiple Clients</h3>
+            <div class="code-block">
+<span class="keyword">while</span> (1) {
+    <span class="comment">// Accept client connection</span>
+    client_socket = <span class="function">accept</span>(server_socket, ...);
+
+    <span class="keyword">if</span> (<span class="function">fork</span>() == 0) {
+        <span class="comment">// Child: handle this client</span>
+        <span class="function">handle_client</span>(client_socket);
+        <span class="function">exit</span>(0);
+    }
+    <span class="comment">// Parent: continue accepting connections</span>
+}
+            </div>
+
+            <h3 style="color: #667eea; margin-top: 20px;">Pattern 2: Parallel Task Execution</h3>
+            <div class="code-block">
+<span class="keyword">for</span> (<span class="keyword">int</span> i = 0; i &lt; num_tasks; i++) {
+    <span class="keyword">if</span> (<span class="function">fork</span>() == 0) {
+        <span class="comment">// Child: execute task</span>
+        <span class="function">execute_task</span>(i);
+        <span class="function">exit</span>(0);
+    }
+}
+<span class="comment">// Parent: wait for all children</span>
+<span class="keyword">while</span> (<span class="function">wait</span>(NULL) &gt; 0);
+            </div>
+        </div>
+
+        <footer style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd; color: #666;">
+            <p>Operating Systems - Task 24: fork() System Call</p>
+            <a href="index.html" class="nav-link">← Back to Home</a>
+        </footer>
+    </div>
+
+    <script>
+        let processTree = [];
+
+        function simulateFork() {
+            const output = document.getElementById('output');
+            const treeContent = document.getElementById('treeContent');
+            const processTreeDiv = document.getElementById('processTree');
+
+            // Generate random PIDs
+            const parentPID = Math.floor(Math.random() * 30000) + 1000;
+            const childPID = parentPID + Math.floor(Math.random() * 100) + 1;
+
+            let result = `=== fork() Simulation ===\n\n`;
+            result += `[BEFORE FORK]\n`;
+            result += `├─ Parent Process\n`;
+            result += `│  └─ PID: ${parentPID}\n`;
+            result += `│  └─ Calling fork()...\n\n`;
+
+            result += `[AFTER FORK]\n`;
+            result += `├─ Parent Process (Original)\n`;
+            result += `│  ├─ PID: ${parentPID}\n`;
+            result += `│  ├─ PPID (Parent's PID): (kernel process)\n`;
+            result += `│  └─ fork() returned: ${childPID} (Child's PID)\n`;
+            result += `│  └─ Continues with if (pid > 0) branch\n\n`;
+
+            result += `├─ Child Process (New)\n`;
+            result += `│  ├─ PID: ${childPID}\n`;
+            result += `│  ├─ PPID (Parent's PID): ${parentPID}\n`;
+            result += `│  └─ fork() returned: 0\n`;
+            result += `│  └─ Continues with if (pid == 0) branch\n\n`;
+
+            result += `[MEMORY]\n`;
+            result += `├─ Child gets COPY of parent's memory\n`;
+            result += `├─ Separate address spaces\n`;
+            result += `├─ Changes in child don't affect parent\n`;
+            result += `└─ File descriptors are shared (initially)\n\n`;
+
+            result += `[EXECUTION]\n`;
+            result += `├─ Both processes run simultaneously\n`;
+            result += `├─ Scheduler decides which runs when\n`;
+            result += `└─ Independent execution paths possible\n`;
+
+            output.textContent = result;
+
+            // Show process tree
+            treeContent.innerHTML = `
+                <div class="tree-item parent">
+                    <strong>Parent Process</strong>
+                    <div style="margin-top: 8px; font-size: 0.9em;">
+                        PID: ${parentPID}<br>
+                        fork() returned: <span class="return-value">${childPID}</span><br>
+                        Status: Executing parent branch
+                    </div>
+                </div>
+                <div style="margin: 20px 0; text-align: center; color: #667eea; font-weight: bold;">
+                    ⬇️ fork() creates
+                </div>
+                <div class="tree-item child">
+                    <strong>Child Process</strong>
+                    <div style="margin-top: 8px; font-size: 0.9em;">
+                        PID: ${childPID}<br>
+                        PPID (Parent PID): ${parentPID}<br>
+                        fork() returned: <span class="return-value">0</span><br>
+                        Status: Executing child branch
+                    </div>
+                </div>
+            `;
+            processTreeDiv.style.display = 'block';
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = 'Execute the fork() simulator to see process creation...';
+            document.getElementById('processTree').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

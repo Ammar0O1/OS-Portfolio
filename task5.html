@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 5 - Preemptive vs Non-Preemptive Scheduling</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #181410;
+            color: #d4c9b8;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .page { max-width: 860px; margin: 0 auto; }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 20px;
+            border-bottom: 1px solid #2a2218;
+            margin-bottom: 30px;
+        }
+
+        .top-bar a {
+            color: #7a6e5e;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .top-bar a:hover { color: #e0a840; }
+
+        .badge {
+            font-size: 12px;
+            color: #e0a840;
+            background: rgba(224, 168, 64, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        h1 { font-size: 32px; color: #fff; margin-bottom: 10px; }
+        .intro { color: #7a6e5e; font-size: 15px; margin-bottom: 30px; }
+
+        h2 {
+            color: #e0a840;
+            font-size: 18px;
+            margin-top: 30px;
+            margin-bottom: 12px;
+        }
+
+        p { margin-bottom: 14px; font-size: 15px; }
+
+        .box {
+            background: #221c14;
+            border-left: 3px solid #e0a840;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .box p:last-child { margin-bottom: 0; }
+
+        /* Side by side compare */
+        .compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 600px) {
+            .compare { grid-template-columns: 1fr; }
+        }
+
+        .compare-card {
+            background: #221c14;
+            border: 1px solid #2a2218;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .compare-card h3 {
+            font-size: 15px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #2a2218;
+        }
+
+        .compare-card.preemptive h3 { color: #e0a840; }
+        .compare-card.nonpreemptive h3 { color: #8ab4d4; }
+
+        .compare-card p {
+            font-size: 14px;
+            color: #a09080;
+            margin-bottom: 10px;
+        }
+
+        .compare-card p:last-child { margin-bottom: 0; }
+
+        .compare-card b { color: #d4c9b8; }
+
+        /* Demo */
+        .demo {
+            background: #221c14;
+            border: 1px solid #2a2218;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+
+        .demo-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .demo-cols { grid-template-columns: 1fr; }
+        }
+
+        .demo-col h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .demo-col.p h4 { color: #e0a840; }
+        .demo-col.np h4 { color: #8ab4d4; }
+
+        .queue {
+            background: #181410;
+            border: 1px solid #2a2218;
+            border-radius: 6px;
+            padding: 10px;
+            min-height: 120px;
+            margin-bottom: 8px;
+        }
+
+        .queue-label {
+            font-size: 10px;
+            color: #7a6e5e;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .process-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 3px 2px;
+            transition: all 0.3s;
+        }
+
+        .cpu-box {
+            background: #181410;
+            border: 2px solid #e0a840;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        .cpu-box.np-cpu { border-color: #8ab4d4; }
+
+        .cpu-box .idle { color: #4a3e2e; font-weight: normal; }
+
+        .log {
+            background: #181410;
+            border: 1px solid #2a2218;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            min-height: 50px;
+            color: #7a6e5e;
+            line-height: 1.7;
+        }
+
+        .log .ev-preempt { color: #e0a840; }
+        .log .ev-run { color: #d4c9b8; }
+        .log .ev-done { color: #6ec88c; }
+
+        /* controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        button {
+            background: #e0a840;
+            color: #181410;
+            border: none;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        button:hover { background: #c89030; }
+        button:disabled { background: #2a2218; color: #4a3e2e; cursor: not-allowed; }
+
+        button.secondary {
+            background: #2a2218;
+            color: #d4c9b8;
+        }
+
+        button.secondary:hover { background: #38301e; }
+
+        /* table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #2a2218;
+        }
+
+        th { color: #e0a840; font-size: 13px; }
+
+        td.yes { color: #6ec88c; }
+        td.no { color: #d46060; }
+
+        footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #2a2218;
+            text-align: center;
+            color: #4a3e2e;
+            font-size: 13px;
+        }
+
+        footer a { color: #e0a840; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <div class="top-bar">
+        <a href="index.html">&larr; Back to Home</a>
+        <div class="badge">Task 05</div>
+    </div>
+
+    <h1>Preemptive vs. Non-Preemptive Scheduling</h1>
+    <p class="intro">There are two ways an OS can decide when to take the CPU away from a running process. This page explains the difference between them.</p>
+
+    <h2>The core difference</h2>
+    <div class="box">
+        <p>The only question that separates these two is: <b>can the OS forcefully take the CPU away from a running process?</b></p>
+        <p>If yes, it is <b>preemptive</b>. If no, it is <b>non-preemptive</b>.</p>
+    </div>
+
+    <div class="compare">
+        <div class="compare-card preemptive">
+            <h3>Preemptive Scheduling</h3>
+            <p><b>How it works:</b> The OS acts as a strict manager. It can forcefully pause a running process, take the CPU away, and hand it to another process at any time.</p>
+            <p><b>Analogy:</b> A moderated debate. The moderator gives each speaker a time limit. When the timer goes off or breaking news happens, the moderator cuts the microphone and gives it to the next person. The old speaker's spot is saved for later.</p>
+            <p><b>Real world benefit:</b> This is why your mouse cursor still moves and your music still plays even when your browser is loading a heavy page. The OS rapidly preempts the browser to give the mouse and audio a fraction of a second to do their jobs.</p>
+            <p><b>Used by:</b> Windows, Linux, macOS, iOS, Android (virtually all modern OSes).</p>
+        </div>
+        <div class="compare-card nonpreemptive">
+            <h3>Non-Preemptive (Cooperative)</h3>
+            <p><b>How it works:</b> Once a process gets the CPU, it holds onto it until it is completely finished, or until it voluntarily gives it up (like when it asks for I/O).</p>
+            <p><b>Analogy:</b> A polite town hall meeting. Once someone gets the microphone, they cannot be interrupted. Even if there is an emergency, everyone must wait until the current speaker willingly steps down.</p>
+            <p><b>The problem:</b> If a program gets stuck in an infinite loop or takes a very long time to calculate something, the entire computer freezes. Other programs simply cannot run.</p>
+            <p><b>Used by:</b> Older systems, some simple embedded systems, cooperative multitasking (old Windows 3.x).</p>
+        </div>
+    </div>
+
+    <h2>See the difference in action</h2>
+    <p>Two processes arrive: P1 (long task) and P2 (urgent, higher priority). Watch what happens in each model when P2 arrives while P1 is running.</p>
+
+    <div class="demo">
+        <div class="demo-cols">
+            <div class="demo-col p">
+                <h4>Preemptive</h4>
+                <div class="queue" id="pQueue">
+                    <div class="queue-label">Ready Queue</div>
+                </div>
+                <div class="queue-label" style="font-size:10px;color:#7a6e5e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">CPU</div>
+                <div class="cpu-box" id="pCpu"><span class="idle">idle</span></div>
+                <div class="log" id="pLog" style="margin-top:8px;"></div>
+            </div>
+            <div class="demo-col np">
+                <h4>Non-Preemptive</h4>
+                <div class="queue" id="npQueue">
+                    <div class="queue-label">Ready Queue</div>
+                </div>
+                <div class="queue-label" style="font-size:10px;color:#7a6e5e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">CPU</div>
+                <div class="cpu-box np-cpu" id="npCpu"><span class="idle">idle</span></div>
+                <div class="log" id="npLog" style="margin-top:8px;"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="step()" id="btnStep">Next Step</button>
+            <button class="secondary" onclick="resetDemo()">Reset</button>
+        </div>
+    </div>
+
+    <h2>Quick comparison</h2>
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Preemptive</th>
+            <th>Non-Preemptive</th>
+        </tr>
+        <tr>
+            <td>OS can forcefully take CPU</td>
+            <td class="yes">Yes</td>
+            <td class="no">No</td>
+        </tr>
+        <tr>
+            <td>Process runs until done</td>
+            <td class="no">No</td>
+            <td class="yes">Yes (or until it yields)</td>
+        </tr>
+        <tr>
+            <td>Good response time</td>
+            <td class="yes">Yes</td>
+            <td class="no">Not guaranteed</td>
+        </tr>
+        <tr>
+            <td>Risk of system freeze</td>
+            <td class="no">No</td>
+            <td class="yes">Yes</td>
+        </tr>
+        <tr>
+            <td>Needs context switching</td>
+            <td class="yes">Yes (more overhead)</td>
+            <td class="no">Less frequent</td>
+        </tr>
+        <tr>
+            <td>Used in modern OSes</td>
+            <td class="yes">Yes</td>
+            <td class="no">Rarely</td>
+        </tr>
+    </table>
+
+    <footer>
+        Task 5: Preemptive vs. Non-Preemptive Scheduling<br>
+        Created by Aland Dlshad Ahmad<br><br>
+        <a href="index.html">&larr; Back to Home</a>
+    </footer>
+
+</div>
+
+<script>
+    const COLORS = {
+        P1: { bg: '#4a6e9a', text: '#fff' },
+        P2: { bg: '#e0a840', text: '#181410' }
+    };
+
+    // Steps for the animation
+    // Each step: { pQueue, pCpu, pLog, npQueue, npCpu, npLog }
+    const steps = [
+        {
+            pQueue:  ['P1'],
+            pCpu:    null,
+            pLog:    '',
+            npQueue: ['P1'],
+            npCpu:   null,
+            npLog:   ''
+        },
+        {
+            pQueue:  [],
+            pCpu:    'P1',
+            pLog:    '<span class="ev-run">P1 starts running on CPU.</span>',
+            npQueue: [],
+            npCpu:   'P1',
+            npLog:   '<span class="ev-run">P1 starts running on CPU.</span>'
+        },
+        {
+            pQueue:  ['P2'],
+            pCpu:    'P1',
+            pLog:    'P2 arrives (higher priority).',
+            npQueue: ['P2'],
+            npCpu:   'P1',
+            npLog:   'P2 arrives (higher priority).'
+        },
+        {
+            pQueue:  ['P1'],
+            pCpu:    'P2',
+            pLog:    '<span class="ev-preempt">OS preempts P1! P2 takes the CPU.</span>',
+            npQueue: ['P2'],
+            npCpu:   'P1',
+            npLog:   'P1 cannot be interrupted. P2 must wait.'
+        },
+        {
+            pQueue:  ['P1'],
+            pCpu:    'P2',
+            pLog:    '<span class="ev-done">P2 finishes.</span>',
+            npQueue: ['P2'],
+            npCpu:   'P1',
+            npLog:   '<span class="ev-done">P1 finishes.</span>'
+        },
+        {
+            pQueue:  [],
+            pCpu:    'P1',
+            pLog:    '<span class="ev-run">P1 resumes from where it stopped.</span>',
+            npQueue: [],
+            npCpu:   'P2',
+            npLog:   '<span class="ev-run">P2 finally gets the CPU.</span>'
+        },
+        {
+            pQueue:  [],
+            pCpu:    null,
+            pLog:    '<span class="ev-done">P1 finishes. All done.</span>',
+            npQueue: [],
+            npCpu:   null,
+            npLog:   '<span class="ev-done">P2 finishes. All done.</span>'
+        }
+    ];
+
+    let currentStep = 0;
+    let pLogText = '';
+    let npLogText = '';
+
+    function pill(name) {
+        const c = COLORS[name] || { bg: '#444', text: '#fff' };
+        return '<span class="process-pill" style="background:' + c.bg + ';color:' + c.text + '">' + name + '</span>';
+    }
+
+    function renderStep(i) {
+        const s = steps[i];
+
+        // Preemptive queue
+        const pq = document.getElementById('pQueue');
+        pq.innerHTML = '<div class="queue-label">Ready Queue</div>';
+        s.pQueue.forEach(p => { pq.innerHTML += pill(p); });
+
+        // Preemptive CPU
+        const pc = document.getElementById('pCpu');
+        if (s.pCpu) {
+            const c = COLORS[s.pCpu];
+            pc.style.background = c.bg + '22';
+            pc.style.borderColor = c.bg;
+            pc.innerHTML = '<span style="color:' + c.bg + '">' + s.pCpu + ' running</span>';
+        } else {
+            pc.style.background = '';
+            pc.style.borderColor = '#e0a840';
+            pc.innerHTML = '<span class="idle">idle</span>';
+        }
+
+        // Non-preemptive queue
+        const npq = document.getElementById('npQueue');
+        npq.innerHTML = '<div class="queue-label">Ready Queue</div>';
+        s.npQueue.forEach(p => { npq.innerHTML += pill(p); });
+
+        // Non-preemptive CPU
+        const npc = document.getElementById('npCpu');
+        if (s.npCpu) {
+            const c = COLORS[s.npCpu];
+            npc.style.background = c.bg + '22';
+            npc.style.borderColor = c.bg;
+            npc.innerHTML = '<span style="color:' + c.bg + '">' + s.npCpu + ' running</span>';
+        } else {
+            npc.style.background = '';
+            npc.style.borderColor = '#8ab4d4';
+            npc.innerHTML = '<span class="idle">idle</span>';
+        }
+
+        // Logs
+        if (s.pLog) { pLogText += (pLogText ? '<br>' : '') + s.pLog; }
+        if (s.npLog) { npLogText += (npLogText ? '<br>' : '') + s.npLog; }
+        document.getElementById('pLog').innerHTML = pLogText;
+        document.getElementById('npLog').innerHTML = npLogText;
+    }
+
+    function step() {
+        if (currentStep < steps.length) {
+            renderStep(currentStep);
+            currentStep++;
+        }
+        if (currentStep >= steps.length) {
+            document.getElementById('btnStep').disabled = true;
+        }
+    }
+
+    function resetDemo() {
+        currentStep = 0;
+        pLogText = '';
+        npLogText = '';
+        document.getElementById('pQueue').innerHTML = '<div class="queue-label">Ready Queue</div>';
+        document.getElementById('npQueue').innerHTML = '<div class="queue-label">Ready Queue</div>';
+        document.getElementById('pCpu').style.background = '';
+        document.getElementById('pCpu').style.borderColor = '#e0a840';
+        document.getElementById('pCpu').innerHTML = '<span class="idle">idle</span>';
+        document.getElementById('npCpu').style.background = '';
+        document.getElementById('npCpu').style.borderColor = '#8ab4d4';
+        document.getElementById('npCpu').innerHTML = '<span class="idle">idle</span>';
+        document.getElementById('pLog').innerHTML = '';
+        document.getElementById('npLog').innerHTML = '';
+        document.getElementById('btnStep').disabled = false;
+    }
+
+    resetDemo();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 2 - SJF CPU Scheduler</title>
+<style>
+    * {
+        box-sizing: border-box;
+        scroll-behavior: smooth;
+    }
+
+    body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: #f4f6fb;
+        color: #1f2937;
+        line-height: 1.6;
+    }
+
+    header {
+        background: linear-gradient(135deg, #243b55, #141e30);
+        color: white;
+        padding: 35px 20px;
+        text-align: center;
+    }
+
+    header h1 {
+        margin: 0;
+        font-size: 36px;
+        letter-spacing: 1px;
+    }
+
+    header p {
+        margin: 10px 0 0;
+        font-size: 18px;
+        color: #dbeafe;
+    }
+
+    nav {
+        background: #111827;
+        padding: 12px;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    nav a {
+        color: white;
+        text-decoration: none;
+        margin: 0 12px;
+        font-weight: 600;
+        font-size: 15px;
+    }
+
+    nav a:hover {
+        color: #93c5fd;
+    }
+
+    .container {
+        max-width: 1150px;
+        margin: auto;
+        padding: 25px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+        border: 1px solid #e5e7eb;
+    }
+
+    h2 {
+        margin-top: 0;
+        color: #1e3a8a;
+        border-left: 6px solid #2563eb;
+        padding-left: 12px;
+    }
+
+    h3 {
+        color: #374151;
+        margin-bottom: 8px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+    }
+
+    .mini-box {
+        background: #eff6ff;
+        border-left: 5px solid #2563eb;
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .mini-box strong {
+        color: #1e40af;
+    }
+
+    .formula {
+        background: #111827;
+        color: #f9fafb;
+        padding: 14px;
+        border-radius: 10px;
+        font-family: Consolas, monospace;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background: white;
+    }
+
+    th, td {
+        border: 1px solid #d1d5db;
+        padding: 10px;
+        text-align: center;
+    }
+
+    th {
+        background: #1f2937;
+        color: white;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 15px;
+    }
+
+    button {
+        border: none;
+        background: #2563eb;
+        color: white;
+        padding: 11px 16px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        margin: 5px;
+        transition: 0.2s;
+    }
+
+    button:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+    }
+
+    .secondary {
+        background: #475569;
+    }
+
+    .secondary:hover {
+        background: #334155;
+    }
+
+    .danger {
+        background: #dc2626;
+    }
+
+    .danger:hover {
+        background: #b91c1c;
+    }
+
+    .button-row {
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    .gantt-wrapper {
+        overflow-x: auto;
+        padding-bottom: 8px;
+    }
+
+    .gantt {
+        display: flex;
+        align-items: stretch;
+        min-height: 75px;
+        margin-top: 20px;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #e5e7eb;
+    }
+
+    .gantt-block {
+        min-width: 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        font-weight: bold;
+        border-right: 1px solid rgba(255,255,255,0.8);
+        color: #111827;
+    }
+
+    .gantt-block span {
+        display: block;
+    }
+
+    .time-row {
+        display: flex;
+        min-width: fit-content;
+        font-size: 13px;
+        color: #374151;
+    }
+
+    .time-cell {
+        min-width: 70px;
+        text-align: left;
+        padding-top: 4px;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+    }
+
+    .summary-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+    }
+
+    .summary-box .value {
+        font-size: 26px;
+        font-weight: 800;
+        color: #2563eb;
+    }
+
+    .note {
+        background: #fff7ed;
+        border-left: 5px solid #f97316;
+        padding: 14px;
+        border-radius: 10px;
+    }
+
+    .flow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 18px;
+    }
+
+    .flow-item {
+        background: #dbeafe;
+        border: 2px solid #2563eb;
+        color: #1e3a8a;
+        padding: 14px 18px;
+        border-radius: 14px;
+        font-weight: 700;
+        min-width: 130px;
+        text-align: center;
+    }
+
+    .arrow {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2563eb;
+    }
+
+    footer {
+        text-align: center;
+        color: #6b7280;
+        padding: 25px;
+        font-size: 14px;
+    }
+
+    @media (max-width: 700px) {
+        header h1 {
+            font-size: 27px;
+        }
+
+        nav a {
+            display: inline-block;
+            margin: 5px 8px;
+        }
+
+        .container {
+            padding: 15px;
+        }
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Topic 2: SJF CPU Scheduler</h1>
+    <p>Operating Systems Interactive Web Portfolio</p>
+    <p><strong>Student:</strong> Mohammed Ahmed Mohammed</p>
+    <a href="index.html" style="display:inline-block;margin-top:12px;color:#93c5fd;text-decoration:none;font-size:14px;">&larr; Back to Home</a>
+</header>
+
+<nav>
+    <a href="#overview">Overview</a>
+    <a href="#theory">Theory</a>
+    <a href="#demo">Interactive Demo</a>
+    <a href="#example">Worked Example</a>
+    <a href="#summary">Summary</a>
+</nav>
+
+<div class="container">
+
+<section id="overview" class="card">
+    <h2>Overview</h2>
+    <p>
+        CPU scheduling is basically how the operating system decides which process should use the CPU next.
+        Since many processes can be ready at the same time, the CPU needs a fair and organized way to choose between them.
+        The main point is to keep the CPU working instead of leaving it idle while processes are waiting.
+    </p>
+
+    <div class="info-grid">
+        <div class="mini-box">
+            <strong>CPU Scheduler</strong>
+            <p>Chooses one ready process and gives it a turn to run on the CPU.</p>
+        </div>
+        <div class="mini-box">
+            <strong>Ready Queue</strong>
+            <p>Stores the processes that are ready, but still waiting for their CPU turn.</p>
+        </div>
+        <div class="mini-box">
+            <strong>Dispatcher</strong>
+            <p>Does the actual switch when the CPU moves from one process to another.</p>
+        </div>
+    </div>
+</section>
+
+<section id="theory" class="card">
+    <h2>What is SJF Scheduling?</h2>
+    <p>
+        <strong>SJF</strong> means <strong>Shortest Job First</strong>. The idea is easy to understand:
+        the process with the shortest CPU burst gets selected first. So instead of making small jobs wait behind
+        long jobs, the system gives shorter jobs a chance to finish earlier.
+    </p>
+
+    <div class="note">
+        <strong>Important rule:</strong> If two processes have the same burst time, the one that arrived first will run first.
+        So in that case, it works like FCFS as a tie breaker.
+    </div>
+
+    <h3>Types of SJF</h3>
+    <div class="info-grid">
+        <div class="mini-box">
+            <strong>Non-Preemptive SJF</strong>
+            <p>When a process starts running, it stays on the CPU until it finishes. A new shorter process cannot interrupt it.</p>
+        </div>
+        <div class="mini-box">
+            <strong>Preemptive SJF / SRTF</strong>
+            <p>If a new process arrives and has a shorter remaining time, the running process can be paused and replaced.</p>
+        </div>
+    </div>
+
+    <h3>Scheduling Criteria</h3>
+    <p>These are the main formulas we usually use when solving CPU scheduling questions:</p>
+    <div class="formula">
+Completion Time = time when process finishes<br>
+Turnaround Time = Completion Time - Arrival Time<br>
+Waiting Time = Turnaround Time - Burst Time
+    </div>
+
+    <h3>Simple Visual Idea</h3>
+    <div class="flow">
+        <div class="flow-item">Ready Queue</div>
+        <div class="arrow">→</div>
+        <div class="flow-item">Pick Shortest Burst</div>
+        <div class="arrow">→</div>
+        <div class="flow-item">CPU Executes</div>
+        <div class="arrow">→</div>
+        <div class="flow-item">Process Finishes</div>
+    </div>
+</section>
+
+<section id="demo" class="card">
+    <h2>Interactive SJF Demo</h2>
+    <p>
+        You can change the arrival time and burst time in the table, then click <strong>Run Scheduler</strong>.
+        The demo will draw the Gantt chart and calculate the important values, like completion time,
+        turnaround time, waiting time, and the averages.
+    </p>
+
+    <label for="mode"><strong>Scheduling Mode</strong></label>
+    <select id="mode">
+        <option value="non">Non-Preemptive SJF</option>
+        <option value="pre">Preemptive SJF / Shortest Remaining Time First</option>
+    </select>
+
+    <table id="processTable">
+        <thead>
+            <tr>
+                <th>Process</th>
+                <th>Arrival Time</th>
+                <th>Burst Time</th>
+                <th>Remove</th>
+            </tr>
+        </thead>
+        <tbody id="processBody">
+            <tr>
+                <td><input value="P1"></td>
+                <td><input type="number" min="0" value="0"></td>
+                <td><input type="number" min="1" value="8"></td>
+                <td><button class="danger" onclick="removeRow(this)">X</button></td>
+            </tr>
+            <tr>
+                <td><input value="P2"></td>
+                <td><input type="number" min="0" value="1"></td>
+                <td><input type="number" min="1" value="4"></td>
+                <td><button class="danger" onclick="removeRow(this)">X</button></td>
+            </tr>
+            <tr>
+                <td><input value="P3"></td>
+                <td><input type="number" min="0" value="2"></td>
+                <td><input type="number" min="1" value="9"></td>
+                <td><button class="danger" onclick="removeRow(this)">X</button></td>
+            </tr>
+            <tr>
+                <td><input value="P4"></td>
+                <td><input type="number" min="0" value="3"></td>
+                <td><input type="number" min="1" value="5"></td>
+                <td><button class="danger" onclick="removeRow(this)">X</button></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="button-row">
+        <button onclick="addRow()">Add Process</button>
+        <button onclick="runScheduler()">Run Scheduler</button>
+        <button class="secondary" onclick="loadSimpleExample()">Load Class-Style Example</button>
+        <button class="danger" onclick="clearOutput()">Clear Output</button>
+    </div>
+
+    <div id="output"></div>
+</section>
+
+<section id="example" class="card">
+    <h2>Worked Example</h2>
+    <p>Let us take this small example:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Process</th>
+                <th>Arrival Time</th>
+                <th>Burst Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>P1</td><td>0</td><td>8</td></tr>
+            <tr><td>P2</td><td>1</td><td>4</td></tr>
+            <tr><td>P3</td><td>2</td><td>9</td></tr>
+            <tr><td>P4</td><td>3</td><td>5</td></tr>
+        </tbody>
+    </table>
+
+    <p>
+        In <strong>preemptive SJF</strong>, P1 starts first because it is the only process available at time 0.
+        When P2 arrives at time 1, it has a shorter burst than the remaining time of P1, so P1 is stopped for now.
+        After that, the scheduler keeps choosing the process with the shortest remaining time.
+    </p>
+
+    <div class="formula">
+Gantt Chart: P1 | P2 | P4 | P1 | P3<br>
+Time:        0  1  5  10 17 26
+    </div>
+
+    <p>
+        This example shows the idea clearly: in preemptive scheduling, a process does not always finish in one turn.
+        It can be paused if a shorter job arrives.
+    </p>
+</section>
+
+<section id="summary" class="card">
+    <h2>Summary</h2>
+    <ul>
+        <li>SJF runs the process with the shortest CPU burst first.</li>
+        <li>It is useful because short jobs do not have to wait too long.</li>
+        <li>In non-preemptive SJF, the running process is not interrupted.</li>
+        <li>In preemptive SJF, the scheduler can stop a process if a shorter one arrives.</li>
+        <li>The weakness is that the exact next CPU burst is not always known, so the OS may need to estimate it.</li>
+    </ul>
+</section>
+
+</div>
+
+<footer>
+    Operating Systems Web Portfolio | Topic 2: SJF CPU Scheduler | Mohammed Ahmed Mohammed
+</footer>
+
+<script>
+function addRow(name = "", arrival = 0, burst = 1) {
+    const body = document.getElementById("processBody");
+    const number = body.children.length + 1;
+    const row = document.createElement("tr");
+    row.innerHTML = `
+        <td><input value="${name || "P" + number}"></td>
+        <td><input type="number" min="0" value="${arrival}"></td>
+        <td><input type="number" min="1" value="${burst}"></td>
+        <td><button class="danger" onclick="removeRow(this)">X</button></td>
+    `;
+    body.appendChild(row);
+}
+
+function removeRow(btn) {
+    const body = document.getElementById("processBody");
+    if (body.children.length <= 1) {
+        alert("At least one process is required.");
+        return;
+    }
+    btn.closest("tr").remove();
+}
+
+function readProcesses() {
+    const rows = document.querySelectorAll("#processBody tr");
+    const processes = [];
+
+    rows.forEach((row, index) => {
+        const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value.trim() || "P" + (index + 1);
+        const arrival = Number(inputs[1].value);
+        const burst = Number(inputs[2].value);
+
+        if (arrival < 0 || burst <= 0 || !Number.isFinite(arrival) || !Number.isFinite(burst)) {
+            throw new Error("Arrival time must be 0 or more, and burst time must be more than 0.");
+        }
+
+        processes.push({
+            name,
+            arrival,
+            burst,
+            remaining: burst,
+            completion: 0,
+            firstStart: null,
+            originalIndex: index
+        });
+    });
+
+    return processes;
+}
+
+function runScheduler() {
+    try {
+        const mode = document.getElementById("mode").value;
+        const processes = readProcesses();
+        const result = mode === "non" ? nonPreemptiveSJF(processes) : preemptiveSJF(processes);
+        showOutput(result, mode);
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+function nonPreemptiveSJF(processes) {
+    let time = 0;
+    let completed = 0;
+    const n = processes.length;
+    const gantt = [];
+    const done = new Set();
+
+    while (completed < n) {
+        const available = processes
+            .filter(p => p.arrival <= time && !done.has(p.name + "_" + p.originalIndex))
+            .sort((a, b) => a.burst - b.burst || a.arrival - b.arrival || a.originalIndex - b.originalIndex);
+
+        if (available.length === 0) {
+            const nextArrival = Math.min(...processes.filter(p => !done.has(p.name + "_" + p.originalIndex)).map(p => p.arrival));
+            gantt.push({name: "Idle", start: time, end: nextArrival});
+            time = nextArrival;
+            continue;
+        }
+
+        const current = available[0];
+        current.firstStart = time;
+        const start = time;
+        time += current.burst;
+        current.completion = time;
+        done.add(current.name + "_" + current.originalIndex);
+        gantt.push({name: current.name, start, end: time});
+        completed++;
+    }
+
+    return calculateMetrics(processes, gantt);
+}
+
+function preemptiveSJF(processes) {
+    let time = 0;
+    let completed = 0;
+    const n = processes.length;
+    const gantt = [];
+    let lastName = null;
+
+    while (completed < n) {
+        const available = processes
+            .filter(p => p.arrival <= time && p.remaining > 0)
+            .sort((a, b) => a.remaining - b.remaining || a.arrival - b.arrival || a.originalIndex - b.originalIndex);
+
+        if (available.length === 0) {
+            const unfinished = processes.filter(p => p.remaining > 0);
+            const nextArrival = Math.min(...unfinished.map(p => p.arrival));
+            addGanttBlock(gantt, "Idle", time, nextArrival);
+            time = nextArrival;
+            lastName = "Idle";
+            continue;
+        }
+
+        const current = available[0];
+        if (current.firstStart === null) {
+            current.firstStart = time;
+        }
+
+        addGanttBlock(gantt, current.name, time, time + 1);
+        current.remaining--;
+        time++;
+
+        if (current.remaining === 0) {
+            current.completion = time;
+            completed++;
+        }
+
+        lastName = current.name;
+    }
+
+    return calculateMetrics(processes, gantt);
+}
+
+function addGanttBlock(gantt, name, start, end) {
+    const last = gantt[gantt.length - 1];
+    if (last && last.name === name && last.end === start) {
+        last.end = end;
+    } else {
+        gantt.push({name, start, end});
+    }
+}
+
+function calculateMetrics(processes, gantt) {
+    let totalWaiting = 0;
+    let totalTurnaround = 0;
+
+    processes.forEach(p => {
+        p.turnaround = p.completion - p.arrival;
+        p.waiting = p.turnaround - p.burst;
+        p.response = p.firstStart - p.arrival;
+        totalWaiting += p.waiting;
+        totalTurnaround += p.turnaround;
+    });
+
+    const totalTime = gantt.length ? gantt[gantt.length - 1].end - gantt[0].start : 0;
+    const busyTime = processes.reduce((sum, p) => sum + p.burst, 0);
+    const cpuUtilization = totalTime > 0 ? (busyTime / totalTime) * 100 : 0;
+
+    return {
+        processes,
+        gantt,
+        averageWaiting: totalWaiting / processes.length,
+        averageTurnaround: totalTurnaround / processes.length,
+        cpuUtilization
+    };
+}
+
+function showOutput(result, mode) {
+    const output = document.getElementById("output");
+    const title = mode === "non" ? "Non-Preemptive SJF Result" : "Preemptive SJF / SRTF Result";
+
+    let ganttHTML = `<div class="gantt-wrapper"><div class="gantt">`;
+    result.gantt.forEach((block, index) => {
+        const duration = block.end - block.start;
+        const width = Math.max(70, duration * 45);
+        const background = block.name === "Idle" ? "#cbd5e1" : getColor(index);
+        ganttHTML += `
+            <div class="gantt-block" style="width:${width}px; background:${background};">
+                <span>${block.name}</span>
+                <small>${block.start} → ${block.end}</small>
+            </div>
+        `;
+    });
+    ganttHTML += `</div></div>`;
+
+    let tableHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Process</th>
+                    <th>Arrival</th>
+                    <th>Burst</th>
+                    <th>Completion</th>
+                    <th>Turnaround</th>
+                    <th>Waiting</th>
+                    <th>Response</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    result.processes
+        .slice()
+        .sort((a, b) => a.originalIndex - b.originalIndex)
+        .forEach(p => {
+            tableHTML += `
+                <tr>
+                    <td>${escapeHTML(p.name)}</td>
+                    <td>${p.arrival}</td>
+                    <td>${p.burst}</td>
+                    <td>${p.completion}</td>
+                    <td>${p.turnaround}</td>
+                    <td>${p.waiting}</td>
+                    <td>${p.response}</td>
+                </tr>
+            `;
+        });
+
+    tableHTML += `</tbody></table>`;
+
+    output.innerHTML = `
+        <hr>
+        <h3>${title}</h3>
+        ${ganttHTML}
+        ${tableHTML}
+        <div class="summary-grid">
+            <div class="summary-box">
+                <div class="value">${result.averageWaiting.toFixed(2)}</div>
+                <div>Average Waiting Time</div>
+            </div>
+            <div class="summary-box">
+                <div class="value">${result.averageTurnaround.toFixed(2)}</div>
+                <div>Average Turnaround Time</div>
+            </div>
+            <div class="summary-box">
+                <div class="value">${result.cpuUtilization.toFixed(1)}%</div>
+                <div>CPU Utilization</div>
+            </div>
+        </div>
+    `;
+}
+
+function getColor(index) {
+    const colors = ["#93c5fd", "#86efac", "#fde68a", "#fca5a5", "#c4b5fd", "#67e8f9", "#fdba74"];
+    return colors[index % colors.length];
+}
+
+function escapeHTML(str) {
+    return str.replace(/[&<>"']/g, function(match) {
+        return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        }[match];
+    });
+}
+
+function loadSimpleExample() {
+    const body = document.getElementById("processBody");
+    body.innerHTML = "";
+    addRow("P1", 0, 8);
+    addRow("P2", 1, 4);
+    addRow("P3", 2, 9);
+    addRow("P4", 3, 5);
+    document.getElementById("mode").value = "pre";
+    clearOutput();
+}
+
+function clearOutput() {
+    document.getElementById("output").innerHTML = "";
+}
+</script>
+
+</body>
+</html>

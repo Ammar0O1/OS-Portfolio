@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operating Systems – Interactive Web Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --surface: #111827;
+            --surface2: #1a2236;
+            --border: #1e293b;
+            --text: #e2e8f0;
+            --text-dim: #64748b;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --green: #34d399;
+            --orange: #fb923c;
+            --pink: #f472b6;
+            --purple: #a78bfa;
+            --red: #f87171;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── HEADER ── */
+        header {
+            padding: 60px 0 40px;
+            text-align: center;
+        }
+
+        .tag {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-glow);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(28px, 5vw, 48px);
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+        }
+
+        h1 .highlight {
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-dim);
+            font-size: 16px;
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ── SECTION HEADINGS ── */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 48px 0 20px;
+        }
+
+        .section-label .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .section-label h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .section-label .count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-left: auto;
+        }
+
+        .cat-scheduling .icon { background: rgba(56, 189, 248, 0.12); color: var(--accent); }
+        .cat-scheduling h2 { color: var(--accent); }
+
+        .cat-process .icon { background: rgba(52, 211, 153, 0.12); color: var(--green); }
+        .cat-process h2 { color: var(--green); }
+
+
+
+        .cat-lab .icon { background: rgba(244, 114, 182, 0.12); color: var(--pink); }
+        .cat-lab h2 { color: var(--pink); }
+
+        /* ── TASK GRID ── */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            gap: 12px;
+        }
+
+        .task-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .task-card:hover {
+            border-color: rgba(56, 189, 248, 0.3);
+            background: var(--surface2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .task-card .num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .task-card .info { flex: 1; min-width: 0; }
+
+        .task-card .title {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.35;
+            margin-bottom: 4px;
+        }
+
+        .task-card .student {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .task-card .arrow {
+            color: var(--text-dim);
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+
+        .task-card:hover .arrow {
+            transform: translateX(3px);
+            color: var(--accent);
+        }
+
+
+
+        /* Category-specific number badge colors */
+        .cat-scheduling .num { background: rgba(56, 189, 248, 0.12); color: var(--accent); }
+        .cat-process .num { background: rgba(52, 211, 153, 0.12); color: var(--green); }
+
+        .cat-lab .num { background: rgba(244, 114, 182, 0.12); color: var(--pink); }
+
+        /* ── FOOTER ── */
+        footer {
+            text-align: center;
+            padding: 60px 0 40px;
+            color: var(--text-dim);
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        footer span { color: var(--accent); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            header { padding: 40px 0 24px; }
+            .grid { grid-template-columns: 1fr; }
+            .section-label { margin: 36px 0 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <div class="tag">SE-II &bull; 2025–2026</div>
+        <h1>Operating Systems<br><span class="highlight">Interactive Web Portfolio</span></h1>
+        <p>A collaborative class project — each page is built by a student to visually explain one OS concept.</p>
+    </header>
+
+    <!-- ═══ CPU Scheduling ═══ -->
+    <div class="section-label cat-scheduling">
+        <div class="icon">//</div>
+        <h2>CPU Scheduling</h2>
+        <span class="count">5 tasks</span>
+    </div>
+    <div class="grid cat-scheduling">
+        <a href="task1.html" class="task-card">
+            <div class="num">01</div>
+            <div class="info">
+                <div class="title">FCFS CPU Scheduler</div>
+                <div class="student">Ismael Adnan Anwer</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task2.html" class="task-card">
+            <div class="num">02</div>
+            <div class="info">
+                <div class="title">SJF CPU Scheduler</div>
+                <div class="student">Mohammed Ahmed Mohammed</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task3.html" class="task-card">
+            <div class="num">03</div>
+            <div class="info">
+                <div class="title">Priority Scheduling (Preemptive)</div>
+                <div class="student">Ammar Arkan Adil</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task4.html" class="task-card">
+            <div class="num">04</div>
+            <div class="info">
+                <div class="title">Priority Scheduling (Non-Preemptive)</div>
+                <div class="student">Lawand Chato Muhamed Amin</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task5.html" class="task-card">
+            <div class="num">05</div>
+            <div class="info">
+                <div class="title">Preemptive vs. Non-Preemptive Scheduling</div>
+                <div class="student">Aland Dlshad Ahmad</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+    </div>
+
+    <!-- ═══ Processes, Memory & Synchronization ═══ -->
+    <div class="section-label cat-process">
+        <div class="icon">{}</div>
+        <h2>Processes, Memory & Synchronization</h2>
+        <span class="count">9 tasks</span>
+    </div>
+    <div class="grid cat-process">
+        <a href="task6.html" class="task-card">
+            <div class="num">06</div>
+            <div class="info">
+                <div class="title">Process States</div>
+                <div class="student">Ahmed Faris Ali</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task7.html" class="task-card">
+            <div class="num">07</div>
+            <div class="info">
+                <div class="title">Process Control Block (PCB)</div>
+                <div class="student">Hardy Hakim Kabaiz</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task8.html" class="task-card">
+            <div class="num">08</div>
+            <div class="info">
+                <div class="title">Context Switching</div>
+                <div class="student">Blnd Ismael Ali</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task9.html" class="task-card">
+            <div class="num">09</div>
+            <div class="info">
+                <div class="title">IPC: Shared Memory Model</div>
+                <div class="student">Aza Jalal Mahmood</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task10.html" class="task-card">
+            <div class="num">10</div>
+            <div class="info">
+                <div class="title">IPC: Message Passing Model</div>
+                <div class="student">Rahand Kamiran Baitallah</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task11.html" class="task-card">
+            <div class="num">11</div>
+            <div class="info">
+                <div class="title">Direct Memory Access (DMA)</div>
+                <div class="student">Rewan Khatab Ahmed</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task12.html" class="task-card">
+            <div class="num">12</div>
+            <div class="info">
+                <div class="title">Linker and Loader</div>
+                <div class="student">Zozan Kheder Ala</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task13.html" class="task-card">
+            <div class="num">13</div>
+            <div class="info">
+                <div class="title">Deadlocks</div>
+                <div class="student">Ramyar Mhamad Ahmad</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task14.html" class="task-card">
+            <div class="num">14</div>
+            <div class="info">
+                <div class="title">Virtual Memory and Paging</div>
+                <div class="student">Rouliana Mohammad Khalil</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+    </div>
+
+    <!-- ═══ Lab & System Calls ═══ -->
+    <div class="section-label cat-lab">
+        <div class="icon">&gt;_</div>
+        <h2>Lab & System Calls</h2>
+        <span class="count">7 tasks</span>
+    </div>
+    <div class="grid cat-lab">
+        <a href="task24.html" class="task-card">
+            <div class="num">24</div>
+            <div class="info">
+                <div class="title">fork()</div>
+                <div class="student">San Mohammed Qader</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task25.html" class="task-card">
+            <div class="num">25</div>
+            <div class="info">
+                <div class="title">wait()</div>
+                <div class="student">Safin Morad Amir</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task26.html" class="task-card">
+            <div class="num">26</div>
+            <div class="info">
+                <div class="title">exit()</div>
+                <div class="student">Muslim Muhamad Osman</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task27.html" class="task-card">
+            <div class="num">27</div>
+            <div class="info">
+                <div class="title">sleep()</div>
+                <div class="student">Bagzad Mushtaq Khaleel</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task28.html" class="task-card">
+            <div class="num">28</div>
+            <div class="info">
+                <div class="title">dup() and dup2()</div>
+                <div class="student">Nastaran Rzgar Khano</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task29.html" class="task-card">
+            <div class="num">29</div>
+            <div class="info">
+                <div class="title">read()</div>
+                <div class="student">Sovin Safeen Merkhan</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+        <a href="task30.html" class="task-card">
+            <div class="num">30</div>
+            <div class="info">
+                <div class="title">write()</div>
+                <div class="student">Twana Tariq Ahmed</div>
+            </div>
+            <div class="arrow">→</div>
+        </a>
+    </div>
+
+    <footer>
+        Operating Systems – SE-II <span>&bull;</span> 2025–2026
+    </footer>
+
+</div>
+
+</body>
+</html>

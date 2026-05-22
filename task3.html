@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 3 – Priority Scheduling (Preemptive)</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0c1018;
+            --surface: #141a26;
+            --surface2: #1b2333;
+            --border: #232d40;
+            --text: #d4dce8;
+            --text-dim: #5a6a82;
+            --accent: #e8594a;
+            --accent-soft: rgba(232, 89, 74, 0.12);
+            --blue: #4a9ce8;
+            --blue-soft: rgba(74, 156, 232, 0.12);
+            --green: #3ec98a;
+            --green-soft: rgba(62, 201, 138, 0.12);
+            --yellow: #e8c44a;
+            --yellow-soft: rgba(232, 196, 74, 0.12);
+            --purple: #9a6ce8;
+            --purple-soft: rgba(154, 108, 232, 0.12);
+            --cyan: #4ae8d4;
+            --orange: #e8944a;
+            --pink: #e84a8c;
+            --mono: 'JetBrains Mono', monospace;
+            --serif: 'Source Serif 4', Georgia, serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--mono);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Subtle dot grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle, rgba(232, 89, 74, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page { max-width: 960px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1; }
+
+        /* ── NAV ── */
+        nav {
+            padding: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        nav a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+
+        nav a:hover { color: var(--accent); }
+
+        .task-badge {
+            font-size: 11px;
+            color: var(--accent);
+            background: var(--accent-soft);
+            border: 1px solid rgba(232, 89, 74, 0.2);
+            padding: 4px 12px;
+            border-radius: 16px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            padding: 50px 0 40px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero h1 {
+            font-family: var(--serif);
+            font-size: clamp(30px, 5vw, 46px);
+            font-weight: 700;
+            line-height: 1.15;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+
+        .hero h1 em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        .hero p {
+            font-family: var(--serif);
+            font-size: 17px;
+            color: var(--text-dim);
+            max-width: 640px;
+            line-height: 1.7;
+        }
+
+        /* ── THEORY SECTION ── */
+        .theory {
+            padding: 40px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .theory h2 {
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 24px;
+        }
+
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 14px;
+        }
+
+        .concept-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .concept-card h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .concept-card p {
+            font-family: var(--serif);
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.65;
+        }
+
+        .concept-card .tag-inline {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .tag-how { background: var(--blue-soft); color: var(--blue); }
+        .tag-why { background: var(--green-soft); color: var(--green); }
+        .tag-problem { background: var(--yellow-soft); color: var(--yellow); }
+        .tag-fix { background: var(--purple-soft); color: var(--purple); }
+
+        /* ── SIMULATOR ── */
+        .simulator {
+            padding: 40px 0;
+        }
+
+        .simulator h2 {
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 24px;
+        }
+
+        .sim-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+        }
+
+        .input-group input, .input-group select {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 110px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--accent);
+        }
+
+        .input-group select { width: 160px; }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-add {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-add:hover { background: #d14a3c; }
+
+        .btn-run {
+            background: var(--green);
+            color: var(--bg);
+        }
+
+        .btn-run:hover { background: #32b878; }
+
+        .btn-clear {
+            background: var(--surface2);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+        }
+
+        .btn-clear:hover { color: var(--text); border-color: var(--text-dim); }
+
+        .btn-example {
+            background: var(--blue-soft);
+            color: var(--blue);
+            border: 1px solid rgba(74, 156, 232, 0.2);
+        }
+
+        .btn-example:hover { background: rgba(74, 156, 232, 0.2); }
+
+        .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+        /* Process table */
+        .process-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+        .process-table th {
+            text-align: left;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .process-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(35, 45, 64, 0.5);
+        }
+
+        .process-table tr:last-child td { border-bottom: none; }
+
+        .p-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+
+        .remove-btn:hover { color: var(--accent); background: var(--accent-soft); }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-dim);
+            font-size: 13px;
+        }
+
+        /* ── GANTT CHART ── */
+        .results-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .results-panel.visible { display: block; }
+
+        .results-panel h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+        }
+
+        .gantt-container {
+            overflow-x: auto;
+            padding-bottom: 12px;
+        }
+
+        .gantt {
+            display: flex;
+            min-width: fit-content;
+            height: 48px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .gantt-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            min-width: 28px;
+            position: relative;
+            transition: opacity 0.15s;
+        }
+
+        .gantt-block:hover { opacity: 0.85; }
+
+        .gantt-block.idle {
+            background: var(--surface2);
+            color: var(--text-dim);
+            font-weight: 400;
+        }
+
+        .gantt-timeline {
+            display: flex;
+            min-width: fit-content;
+        }
+
+        .gantt-time {
+            font-size: 9px;
+            color: var(--text-dim);
+            min-width: 28px;
+            text-align: left;
+            padding-left: 1px;
+        }
+
+        /* Results table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        .results-table th {
+            text-align: left;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .results-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(35, 45, 64, 0.5);
+        }
+
+        .results-table tr:last-child td { border-bottom: none; }
+
+        .avg-row {
+            background: var(--accent-soft);
+            border-radius: 6px;
+            margin-top: 16px;
+            padding: 14px 16px;
+            display: flex;
+            gap: 32px;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+
+        .avg-row span { color: var(--text-dim); }
+        .avg-row strong { color: #fff; margin-left: 6px; }
+
+        /* Execution log */
+        .exec-log {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.8;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 6px;
+        }
+
+        .exec-log .log-time { color: var(--text-dim); }
+        .exec-log .log-event { color: var(--text); }
+        .exec-log .log-preempt { color: var(--accent); }
+        .exec-log .log-arrive { color: var(--green); }
+        .exec-log .log-complete { color: var(--blue); }
+
+        /* ── FOOTER ── */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 12px;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .hero { padding: 30px 0 24px; }
+            .concept-grid { grid-template-columns: 1fr; }
+            .input-group input { width: 80px; }
+            .avg-row { gap: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <nav>
+        <a href="index.html">&larr; Back to Home</a>
+        <div class="task-badge">Task 03</div>
+    </nav>
+
+    <div class="hero">
+        <h1>Priority Scheduling<br><em>(Preemptive)</em></h1>
+        <p>A CPU scheduling algorithm where each process is assigned a priority, and the CPU always runs the highest-priority process available — even if it means interrupting the one currently running.</p>
+    </div>
+
+    <!-- ── THEORY ── -->
+    <section class="theory">
+        <h2>How It Works</h2>
+        <div class="concept-grid">
+            <div class="concept-card">
+                <span class="tag-inline tag-how">mechanism</span>
+                <h3>Preemptive Priority</h3>
+                <p>A priority number is associated with each process. The CPU is allocated to the process with the highest priority. If a new process arrives with a higher priority than the currently running one, the OS forcefully pauses the running process and hands the CPU to the new arrival.</p>
+            </div>
+            <div class="concept-card">
+                <span class="tag-inline tag-why">analogy</span>
+                <h3>The Moderated Debate</h3>
+                <p>Imagine a moderator giving each speaker a turn. But if breaking news arrives (higher priority), the moderator cuts the current speaker's microphone, saves their spot, and hands the mic to the urgent speaker. When done, the previous speaker resumes.</p>
+            </div>
+            <div class="concept-card">
+                <span class="tag-inline tag-problem">warning</span>
+                <h3>Starvation</h3>
+                <p>A major problem: low-priority processes may wait indefinitely if higher-priority processes keep arriving. A process that is ready to run but perpetually waiting for the CPU is considered blocked or starved.</p>
+            </div>
+            <div class="concept-card">
+                <span class="tag-inline tag-fix">solution</span>
+                <h3>Aging</h3>
+                <p>The fix for starvation: gradually increase the priority of processes that wait a long time. For example, increase priority by 1 every 15 time units. Eventually, even the lowest-priority process will become the highest and get its turn.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── SIMULATOR ── -->
+    <section class="simulator">
+        <h2>Interactive Simulator</h2>
+
+        <div class="sim-panel">
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Process Name</label>
+                    <input type="text" id="pName" placeholder="P1" maxlength="6">
+                </div>
+                <div class="input-group">
+                    <label>Arrival Time</label>
+                    <input type="number" id="pArrival" value="0" min="0" max="100">
+                </div>
+                <div class="input-group">
+                    <label>Burst Time</label>
+                    <input type="number" id="pBurst" value="4" min="1" max="100">
+                </div>
+                <div class="input-group">
+                    <label>Priority</label>
+                    <input type="number" id="pPriority" value="1" min="0" max="100">
+                </div>
+                <div class="input-group">
+                    <label>Priority Rule</label>
+                    <select id="priorityRule">
+                        <option value="lower">Lower = Higher</option>
+                        <option value="higher">Higher = Higher</option>
+                    </select>
+                </div>
+                <button class="btn btn-add" onclick="addProcess()">+ Add</button>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-run" onclick="runScheduler()">Run Scheduler</button>
+                <button class="btn btn-example" onclick="loadExample()">Load Example</button>
+                <button class="btn btn-clear" onclick="clearAll()">Clear All</button>
+            </div>
+
+            <table class="process-table" id="processTable">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Process</th>
+                        <th>Arrival</th>
+                        <th>Burst</th>
+                        <th>Priority</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="processBody">
+                </tbody>
+            </table>
+            <div class="empty-state" id="emptyState">No processes added yet. Add one above or load an example.</div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-panel" id="resultsPanel">
+            <h3>Gantt Chart</h3>
+            <div class="gantt-container">
+                <div class="gantt" id="ganttChart"></div>
+                <div class="gantt-timeline" id="ganttTimeline"></div>
+            </div>
+
+            <h3 style="margin-top: 24px;">Results</h3>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Process</th>
+                        <th>Arrival</th>
+                        <th>Burst</th>
+                        <th>Priority</th>
+                        <th>Completion</th>
+                        <th>Turnaround</th>
+                        <th>Waiting</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+            <div class="avg-row" id="avgRow"></div>
+
+            <h3 style="margin-top: 24px;">Execution Log</h3>
+            <div class="exec-log" id="execLog"></div>
+        </div>
+    </section>
+
+    <footer>
+        Task 3: Priority Scheduling (Preemptive) &mdash; Created by Ammar Arkan Adil
+        <br><a href="index.html">&larr; Back to Home</a>
+    </footer>
+
+</div>
+
+<script>
+    const COLORS = ['#e8594a','#4a9ce8','#3ec98a','#e8c44a','#9a6ce8','#4ae8d4','#e8944a','#e84a8c','#6ce870','#e84a4a'];
+
+    let processes = [];
+    let processCounter = 1;
+
+    function getColor(index) {
+        return COLORS[index % COLORS.length];
+    }
+
+    function addProcess(name, arrival, burst, priority) {
+        if (name === undefined) {
+            name = document.getElementById('pName').value.trim() || ('P' + processCounter);
+            arrival = parseInt(document.getElementById('pArrival').value) || 0;
+            burst = parseInt(document.getElementById('pBurst').value);
+            priority = parseInt(document.getElementById('pPriority').value);
+
+            if (!burst || burst <= 0) return alert('Burst time must be > 0');
+            if (isNaN(priority)) return alert('Priority is required');
+        }
+
+        processes.push({ name, arrival, burst, priority, color: getColor(processes.length) });
+        processCounter++;
+        renderTable();
+
+        // Auto-increment for next input
+        document.getElementById('pName').value = 'P' + processCounter;
+        document.getElementById('pArrival').value = arrival + 1;
+    }
+
+    function removeProcess(i) {
+        processes.splice(i, 1);
+        // Reassign colors
+        processes.forEach((p, idx) => p.color = getColor(idx));
+        renderTable();
+    }
+
+    function renderTable() {
+        const body = document.getElementById('processBody');
+        const empty = document.getElementById('emptyState');
+
+        if (processes.length === 0) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+        body.innerHTML = processes.map((p, i) => `
+            <tr>
+                <td><span class="p-color" style="background:${p.color}"></span></td>
+                <td>${p.name}</td>
+                <td>${p.arrival}</td>
+                <td>${p.burst}</td>
+                <td>${p.priority}</td>
+                <td><button class="remove-btn" onclick="removeProcess(${i})">x</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function loadExample() {
+        processes = [];
+        processCounter = 1;
+        document.getElementById('priorityRule').value = 'lower';
+
+        // Example from the lecture slides
+        addProcess('P1', 0, 11, 2);
+        addProcess('P2', 5, 28, 0);
+        addProcess('P3', 12, 2, 3);
+        addProcess('P4', 2, 10, 1);
+        addProcess('P5', 9, 16, 4);
+    }
+
+    function clearAll() {
+        processes = [];
+        processCounter = 1;
+        document.getElementById('pName').value = 'P1';
+        document.getElementById('pArrival').value = '0';
+        renderTable();
+        document.getElementById('resultsPanel').classList.remove('visible');
+    }
+
+    function runScheduler() {
+        if (processes.length === 0) return alert('Add at least one process.');
+
+        const rule = document.getElementById('priorityRule').value;
+        const isLowerHigher = (rule === 'lower');
+
+        // Deep copy processes
+        const procs = processes.map(p => ({
+            ...p,
+            remaining: p.burst,
+            completed: false,
+            completionTime: 0,
+            turnaround: 0,
+            waiting: 0
+        }));
+
+        const maxTime = procs.reduce((s, p) => s + p.burst, 0) + Math.max(...procs.map(p => p.arrival)) + 1;
+        const timeline = []; // { time, name, color }
+        const log = [];
+
+        let time = 0;
+        let running = null;
+        let completed = 0;
+
+        while (completed < procs.length && time < maxTime + 50) {
+            // Check arrivals
+            const arrivals = procs.filter(p => p.arrival === time && !p.completed);
+            arrivals.forEach(p => {
+                log.push({ time, type: 'arrive', text: `${p.name} arrives (priority: ${p.priority})` });
+            });
+
+            // Get available processes
+            const available = procs.filter(p => p.arrival <= time && !p.completed && p.remaining > 0);
+
+            if (available.length === 0) {
+                timeline.push({ time, name: 'idle', color: null });
+                time++;
+                continue;
+            }
+
+            // Sort by priority
+            available.sort((a, b) => {
+                const diff = isLowerHigher ? (a.priority - b.priority) : (b.priority - a.priority);
+                if (diff !== 0) return diff;
+                return a.arrival - b.arrival; // FCFS tie-break
+            });
+
+            const chosen = available[0];
+
+            // Check preemption
+            if (running && running.name !== chosen.name && running.remaining > 0 && !running.completed) {
+                log.push({ time, type: 'preempt', text: `${running.name} is preempted by ${chosen.name}` });
+            }
+
+            if (!running || running.name !== chosen.name) {
+                log.push({ time, type: 'event', text: `${chosen.name} starts running` });
+            }
+
+            running = chosen;
+            timeline.push({ time, name: chosen.name, color: chosen.color });
+            chosen.remaining--;
+
+            if (chosen.remaining === 0) {
+                chosen.completed = true;
+                chosen.completionTime = time + 1;
+                chosen.turnaround = chosen.completionTime - chosen.arrival;
+                chosen.waiting = chosen.turnaround - chosen.burst;
+                completed++;
+                log.push({ time: time + 1, type: 'complete', text: `${chosen.name} completed (CT=${chosen.completionTime})` });
+                running = null;
+            }
+
+            time++;
+        }
+
+        renderResults(timeline, procs, log);
+    }
+
+    function renderResults(timeline, procs, log) {
+        const panel = document.getElementById('resultsPanel');
+        panel.classList.add('visible');
+
+        // Merge consecutive same-process blocks for gantt
+        const merged = [];
+        for (const t of timeline) {
+            if (merged.length > 0 && merged[merged.length - 1].name === t.name) {
+                merged[merged.length - 1].end = t.time + 1;
+            } else {
+                merged.push({ name: t.name, color: t.color, start: t.time, end: t.time + 1 });
+            }
+        }
+
+        const totalUnits = timeline.length;
+        const unitWidth = Math.max(28, Math.min(50, 800 / totalUnits));
+
+        // Gantt chart
+        const gantt = document.getElementById('ganttChart');
+        gantt.innerHTML = merged.map(b => {
+            const width = (b.end - b.start) * unitWidth;
+            if (b.name === 'idle') {
+                return `<div class="gantt-block idle" style="width:${width}px">idle</div>`;
+            }
+            return `<div class="gantt-block" style="width:${width}px;background:${b.color}">${b.name}</div>`;
+        }).join('');
+
+        // Timeline
+        const tl = document.getElementById('ganttTimeline');
+        let tlHTML = '';
+        for (const b of merged) {
+            const width = (b.end - b.start) * unitWidth;
+            tlHTML += `<div class="gantt-time" style="width:${width}px">${b.start}</div>`;
+        }
+        // Add final time
+        const last = merged[merged.length - 1];
+        tlHTML += `<div class="gantt-time" style="width:30px">${last.end}</div>`;
+        tl.innerHTML = tlHTML;
+
+        // Results table
+        const resBody = document.getElementById('resultsBody');
+        resBody.innerHTML = procs.map(p => `
+            <tr>
+                <td><span class="p-color" style="background:${p.color}"></span></td>
+                <td>${p.name}</td>
+                <td>${p.arrival}</td>
+                <td>${p.burst}</td>
+                <td>${p.priority}</td>
+                <td>${p.completionTime}</td>
+                <td>${p.turnaround}</td>
+                <td>${p.waiting}</td>
+            </tr>
+        `).join('');
+
+        // Averages
+        const avgTAT = (procs.reduce((s, p) => s + p.turnaround, 0) / procs.length).toFixed(2);
+        const avgWT = (procs.reduce((s, p) => s + p.waiting, 0) / procs.length).toFixed(2);
+        document.getElementById('avgRow').innerHTML = `
+            <div><span>Avg Turnaround Time:</span><strong>${avgTAT}</strong></div>
+            <div><span>Avg Waiting Time:</span><strong>${avgWT}</strong></div>
+        `;
+
+        // Execution log
+        const execLog = document.getElementById('execLog');
+        execLog.innerHTML = log.map(l => {
+            let cls = 'log-event';
+            if (l.type === 'preempt') cls = 'log-preempt';
+            if (l.type === 'arrive') cls = 'log-arrive';
+            if (l.type === 'complete') cls = 'log-complete';
+            return `<div><span class="log-time">t=${l.time}</span> &mdash; <span class="${cls}">${l.text}</span></div>`;
+        }).join('');
+
+        // Scroll to results
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Init
+    renderTable();
+</script>
+
+</body>
+</html>

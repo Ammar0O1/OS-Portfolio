@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task 12 - Linker and Loader</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f7fb;
+      color: #222;
+      line-height: 1.7;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1d3557, #457b9d);
+      color: white;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    header h1 {
+      font-size: 42px;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: auto;
+      padding: 30px 0;
+    }
+
+    section {
+      background: white;
+      margin-bottom: 30px;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      color: #1d3557;
+      margin-bottom: 15px;
+      font-size: 30px;
+    }
+
+    h3 {
+      margin-top: 20px;
+      color: #457b9d;
+    }
+
+    p {
+      margin-bottom: 15px;
+    }
+
+    ul {
+      margin-left: 20px;
+      margin-bottom: 15px;
+    }
+
+    .flow {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 25px;
+    }
+
+    .box {
+      background: #e3f2fd;
+      padding: 20px;
+      min-width: 170px;
+      text-align: center;
+      border-radius: 12px;
+      font-weight: bold;
+      transition: 0.4s;
+      border: 2px solid transparent;
+    }
+
+    .arrow {
+      font-size: 30px;
+      color: #1d3557;
+    }
+
+    .active {
+      background: #90caf9;
+      border-color: #1565c0;
+      transform: scale(1.05);
+    }
+
+    .buttons {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    button {
+      padding: 12px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      background: #1d3557;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #457b9d;
+      transform: translateY(-2px);
+    }
+
+    #explanationBox {
+      margin-top: 25px;
+      background: #f1f8ff;
+      border-left: 6px solid #1d3557;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 17px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table th,
+    table td {
+      border: 1px solid #ddd;
+      padding: 15px;
+      text-align: center;
+    }
+
+    table th {
+      background: #1d3557;
+      color: white;
+    }
+
+    .memory {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .memory-box {
+      width: 180px;
+      height: 120px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      transition: 0.5s;
+    }
+
+    .disk {
+      background: #e63946;
+    }
+
+    .ram {
+      background: #2a9d8f;
+      opacity: 0.4;
+    }
+
+    .loaded {
+      opacity: 1;
+      transform: scale(1.08);
+    }
+
+    code {
+      background: #eee;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #555;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 10px;
+      text-decoration: none;
+      color: #1d3557;
+      font-weight: bold;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .flow {
+        flex-direction: column;
+      }
+
+      .arrow {
+        transform: rotate(90deg);
+      }
+
+      header h1 {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Linker and Loader</h1>
+    <p>Operating Systems Interactive Web Portfolio - Task 12</p>
+  </header>
+
+  <div class="container">
+
+    <section>
+      <h2>Introduction</h2>
+      <p>
+        When programmers write code, the computer cannot run it immediately.
+        The code goes through multiple stages before becoming a running application.
+        Two important parts of this process are the <strong>Linker</strong> and the <strong>Loader</strong>.
+      </p>
+
+      <p>
+        The linker combines object files and libraries into one executable file,
+        while the loader places the executable into memory and starts execution.
+      </p>
+    </section>
+
+    <section>
+      <h2>Program Execution Flow</h2>
+
+      <div class="flow">
+        <div class="box" id="step1">Source Code</div>
+        <div class="arrow">➜</div>
+
+        <div class="box" id="step2">Compiler</div>
+        <div class="arrow">➜</div>
+
+        <div class="box" id="step3">Object Files</div>
+        <div class="arrow">➜</div>
+
+        <div class="box" id="step4">Linker</div>
+        <div class="arrow">➜</div>
+
+        <div class="box" id="step5">Executable File</div>
+        <div class="arrow">➜</div>
+
+        <div class="box" id="step6">Loader</div>
+        <div class="arrow">➜</div>
+
+        <div class="box" id="step7">Running Program</div>
+      </div>
+
+      <div class="buttons">
+        <button onclick="showStep(1)">1. Source Code</button>
+        <button onclick="showStep(2)">2. Compile</button>
+        <button onclick="showStep(3)">3. Object Files</button>
+        <button onclick="showStep(4)">4. Link</button>
+        <button onclick="showStep(5)">5. Executable</button>
+        <button onclick="showStep(6)">6. Load</button>
+        <button onclick="showStep(7)">7. Run</button>
+      </div>
+
+      <div id="explanationBox">
+        Click the buttons above to see how a program becomes a running process.
+      </div>
+    </section>
+
+    <section>
+      <h2>What Does the Linker Do?</h2>
+
+      <p>
+        The linker combines all object files into one executable program.
+        It also connects library functions such as <code>printf()</code> and <code>sqrt()</code>.
+      </p>
+
+      <h3>Main Tasks of the Linker</h3>
+
+      <ul>
+        <li>Combines multiple object files</li>
+        <li>Connects external libraries</li>
+        <li>Resolves missing references</li>
+        <li>Creates the final executable file</li>
+      </ul>
+
+      <p>
+        Example:
+      </p>
+
+      <code>
+        main.o + math.o + stdio library → app.exe
+      </code>
+    </section>
+
+    <section>
+      <h2>What Does the Loader Do?</h2>
+
+      <p>
+        After the executable file is created, the operating system uses the loader
+        to place the program into RAM and start execution.
+      </p>
+
+      <h3>Main Tasks of the Loader</h3>
+
+      <ul>
+        <li>Loads the executable into memory</li>
+        <li>Allocates memory for the program</li>
+        <li>Loads required libraries</li>
+        <li>Starts execution from <code>main()</code></li>
+      </ul>
+
+      <div class="memory">
+        <div class="memory-box disk" id="diskBox">
+          Executable File
+        </div>
+
+        <div class="memory-box ram" id="ramBox">
+          RAM Memory
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button onclick="loadToMemory()">Simulate Loading into RAM</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Difference Between Linker and Loader</h2>
+
+      <table>
+        <tr>
+          <th>Linker</th>
+          <th>Loader</th>
+        </tr>
+
+        <tr>
+          <td>Works before execution</td>
+          <td>Works during execution</td>
+        </tr>
+
+        <tr>
+          <td>Creates executable file</td>
+          <td>Loads executable into RAM</td>
+        </tr>
+
+        <tr>
+          <td>Combines files and libraries</td>
+          <td>Starts the program</td>
+        </tr>
+
+        <tr>
+          <td>Part of build process</td>
+          <td>Part of operating system</td>
+        </tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Real Life Analogy</h2>
+
+      <p>
+        Imagine building a car:
+      </p>
+
+      <ul>
+        <li><strong>Compiler:</strong> Creates car parts</li>
+        <li><strong>Linker:</strong> Assembles the parts into one car</li>
+        <li><strong>Loader:</strong> Places fuel in the car and starts the engine</li>
+      </ul>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>Created for the Operating Systems Interactive Web Portfolio</p>
+    <a href="index.html" class="back-link">Back to Home</a>
+  </footer>
+
+  <script>
+    const explanations = {
+      1: "The programmer writes source code using a programming language such as C or C++.",
+
+      2: "The compiler translates source code into machine-level object files.",
+
+      3: "Object files contain machine code, but the program is not complete yet.",
+
+      4: "The linker combines object files and libraries into one executable file.",
+
+      5: "The executable file is now ready to run.",
+
+      6: "The loader places the executable into RAM memory and prepares execution.",
+
+      7: "The operating system starts the program, and execution begins from main()."
+    };
+
+    function showStep(step) {
+      for (let i = 1; i <= 7; i++) {
+        document.getElementById(`step${i}`).classList.remove('active');
+      }
+
+      document.getElementById(`step${step}`).classList.add('active');
+
+      document.getElementById('explanationBox').innerHTML = explanations[step];
+    }
+
+    function loadToMemory() {
+      const ram = document.getElementById('ramBox');
+
+      ram.classList.add('loaded');
+
+      ram.innerHTML = 'Program Loaded!';
+    }
+  </script>
+
+</body>
+</html>

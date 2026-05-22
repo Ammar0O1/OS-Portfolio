@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 13: Deadlocks</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #d32f2f 0%, #f57c00 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #d32f2f;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #d32f2f;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .nav-link:hover {
+            background: #f57c00;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #d32f2f;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 12px;
+            font-size: 0.95em;
+        }
+
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            color: #555;
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .keyword { color: #ff79c6; }
+        .function { color: #8be9fd; }
+        .comment { color: #6272a4; }
+
+        .info-box {
+            background: #ffebee;
+            border-left: 4px solid #d32f2f;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .info-title {
+            font-weight: bold;
+            color: #d32f2f;
+            margin-bottom: 5px;
+        }
+
+        .diagram {
+            background: white;
+            padding: 20px;
+            border: 2px solid #d32f2f;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .condition-box {
+            display: inline-block;
+            padding: 15px;
+            margin: 10px;
+            border: 2px solid #d32f2f;
+            border-radius: 8px;
+            background: #fff3e0;
+            max-width: 250px;
+            font-size: 0.9em;
+        }
+
+        .demo-section {
+            grid-column: 1 / -1;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #f57c00;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .output {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            min-height: 300px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto;
+        }
+
+        .process-visual {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .process {
+            background: white;
+            border: 2px solid #d32f2f;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .resource {
+            background: white;
+            border: 2px solid #f57c00;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .waiting {
+            background: #ffcdd2;
+            color: #b71c1c;
+            padding: 8px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .holding {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 8px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #d32f2f;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .timeline {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .timeline-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #d32f2f;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .prevention-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .method {
+            background: #fff3e0;
+            border: 2px solid #f57c00;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .method h4 {
+            color: #e65100;
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+
+        .method p {
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .example-scenario {
+            background: #f1f8e9;
+            border-left: 4px solid #558b2f;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .example-title {
+            font-weight: bold;
+            color: #558b2f;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .prevention-methods {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚠️ Deadlocks in Operating Systems</h1>
+            <p class="subtitle">Understanding Process Deadlock: Conditions, Causes, and Prevention</p>
+            <a href="index.html" class="nav-link">← Back to Home</a>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <h2>What is a Deadlock?</h2>
+                <p>A deadlock is a situation in which two or more processes are unable to proceed because each is waiting for resources held by the other. It's a state of indefinite waiting where no process can proceed.</p>
+
+                <div class="info-box">
+                    <div class="info-title">🔴 Critical Problem</div>
+                    <p>In a deadlock state, no process makes progress. The system appears frozen, and manual intervention may be required.</p>
+                </div>
+
+                <h3>Real-World Analogy</h3>
+                <p>Two cars approach a single-lane bridge from opposite directions. Neither can proceed because the other car blocks the path, and neither is willing to back up. Both cars are stuck indefinitely.</p>
+
+                <h3>In Computing</h3>
+                <p>Process A holds Resource 1 and waits for Resource 2. Process B holds Resource 2 and waits for Resource 1. Neither can proceed—they are deadlocked.</p>
+            </div>
+
+            <div class="section">
+                <h2>Necessary Conditions for Deadlock</h2>
+                <p>All four of these conditions must be present simultaneously for deadlock to occur:</p>
+
+                <table style="font-size: 0.9em;">
+                    <tr>
+                        <th>#</th>
+                        <th>Condition</th>
+                        <th>Meaning</th>
+                    </tr>
+                    <tr>
+                        <td><strong>1</strong></td>
+                        <td><strong>Mutual Exclusion</strong></td>
+                        <td>Resources cannot be shared; only one process can use at a time</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2</strong></td>
+                        <td><strong>Hold and Wait</strong></td>
+                        <td>Process holds resources while waiting for others</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3</strong></td>
+                        <td><strong>No Preemption</strong></td>
+                        <td>Resources cannot be forcibly taken from a process</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4</strong></td>
+                        <td><strong>Circular Wait</strong></td>
+                        <td>Circular chain of processes waiting for resources</td>
+                    </tr>
+                </table>
+
+                <div class="info-box">
+                    <div class="info-title">💡 Key Insight</div>
+                    <p>If any ONE of these conditions is eliminated, deadlock cannot occur. This principle guides all deadlock prevention strategies.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2>Visual: The Four Necessary Conditions</h2>
+            <div class="diagram">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div class="condition-box">
+                        <strong>1️⃣ Mutual Exclusion</strong><br><br>
+                        Resource can only be used by one process at a time
+                    </div>
+                    <div class="condition-box">
+                        <strong>2️⃣ Hold and Wait</strong><br><br>
+                        Process holds a resource while waiting for another
+                    </div>
+                    <div class="condition-box">
+                        <strong>3️⃣ No Preemption</strong><br><br>
+                        Resource cannot be taken away from process
+                    </div>
+                    <div class="condition-box">
+                        <strong>4️⃣ Circular Wait</strong><br><br>
+                        Circular chain: P1→R1→P2→R2→P1
+                    </div>
+                </div>
+                <p style="margin-top: 20px; font-weight: bold; color: #d32f2f;">✓ All 4 conditions = Deadlock possible</p>
+            </div>
+        </div>
+
+        <div class="content" style="margin-top: 40px;">
+            <div class="section">
+                <h2>Classic Deadlock: Dining Philosophers</h2>
+                <p>Five philosophers sit at a table with a bowl of rice and 5 chopsticks (one between each pair). Each philosopher needs 2 chopsticks to eat.</p>
+
+                <p style="margin-top: 15px;"><strong>Deadlock Scenario:</strong></p>
+                <ol>
+                    <li>Each philosopher picks up left chopstick</li>
+                    <li>Each philosopher tries to pick up right chopstick</li>
+                    <li>No right chopsticks available (all held by left neighbor)</li>
+                    <li>All philosophers wait indefinitely ⚠️</li>
+                </ol>
+
+                <div class="code-block">
+<span class="comment">// Dining Philosophers - Deadlock Code</span>
+<span class="keyword">while</span> (true) {
+    <span class="function">pickup_left_chopstick</span>();
+    <span class="function">pickup_right_chopstick</span>();  <span class="comment">// Blocked!</span>
+    <span class="function">eat</span>();
+    <span class="function">putdown_left_chopstick</span>();
+    <span class="function">putdown_right_chopstick</span>();
+}
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Bank Transfer Deadlock</h2>
+                <p>Common deadlock in financial systems:</p>
+
+                <table style="font-size: 0.9em;">
+                    <tr>
+                        <th>Thread A</th>
+                        <th>Thread B</th>
+                        <th>Result</th>
+                    </tr>
+                    <tr>
+                        <td>Lock Account 1</td>
+                        <td>Lock Account 2</td>
+                        <td rowspan="4" style="vertical-align: middle; color: #d32f2f; font-weight: bold;">⚠️ DEADLOCK</td>
+                    </tr>
+                    <tr>
+                        <td>Try to lock Account 2...</td>
+                        <td>Try to lock Account 1...</td>
+                    </tr>
+                    <tr>
+                        <td style="background: #ffcdd2;">WAITING</td>
+                        <td style="background: #ffcdd2;">WAITING</td>
+                    </tr>
+                </table>
+
+                <div class="code-block">
+<span class="comment">// Thread A</span>
+<span class="function">lock</span>(account1);
+<span class="function">lock</span>(account2);  <span class="comment">// Waits for B</span>
+
+<span class="comment">// Thread B</span>
+<span class="function">lock</span>(account2);
+<span class="function">lock</span>(account1);  <span class="comment">// Waits for A</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2>Deadlock Prevention Strategies</h2>
+            <p>Prevent deadlock by breaking one of the four necessary conditions:</p>
+
+            <div class="prevention-methods">
+                <div class="method">
+                    <h4>🚫 Break Mutual Exclusion</h4>
+                    <p><strong>Approach:</strong> Allow resource sharing<br>
+                    <strong>How:</strong> Use read-only copies, Spooling<br>
+                    <strong>Limitation:</strong> Not always possible (hardware limits)</p>
+                </div>
+
+                <div class="method">
+                    <h4>🚫 Break Hold and Wait</h4>
+                    <p><strong>Approach:</strong> Request all resources at once<br>
+                    <strong>How:</strong> Process requests all resources before proceeding<br>
+                    <strong>Limitation:</strong> Low resource utilization, starvation</p>
+                </div>
+
+                <div class="method">
+                    <h4>🚫 Break No Preemption</h4>
+                    <p><strong>Approach:</strong> Allow resource preemption<br>
+                    <strong>How:</strong> Take resources from waiting process if needed<br>
+                    <strong>Limitation:</strong> Difficult for non-preemptible resources</p>
+                </div>
+
+                <div class="method">
+                    <h4>🚫 Break Circular Wait</h4>
+                    <p><strong>Approach:</strong> Resource ordering<br>
+                    <strong>How:</strong> Processes request resources in ascending order<br>
+                    <strong>Limitation:</strong> Requires coordination</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2>Prevention Example: Resource Ordering</h2>
+            <p>Prevent the bank transfer deadlock by always acquiring locks in the same order:</p>
+
+            <div class="code-block">
+<span class="comment">// DEADLOCK: Lock in different order</span>
+<span class="keyword">void</span> <span class="function">transfer_a_to_b</span>(Account a, Account b) {
+    <span class="function">lock</span>(a);
+    <span class="function">lock</span>(b);
+    <span class="comment">// transfer</span>
+}
+
+<span class="keyword">void</span> <span class="function">transfer_b_to_a</span>(Account b, Account a) {
+    <span class="function">lock</span>(b);  <span class="comment">// Different order = Deadlock!</span>
+    <span class="function">lock</span>(a);
+    <span class="comment">// transfer</span>
+}
+            </div>
+
+            <div class="code-block" style="margin-top: 20px;">
+<span class="comment">// SAFE: Always lock in ID order</span>
+<span class="keyword">void</span> <span class="function">transfer</span>(Account a, Account b, <span class="keyword">int</span> amount) {
+    Account first = (a.id &lt; b.id) ? a : b;
+    Account second = (a.id &lt; b.id) ? b : a;
+
+    <span class="function">lock</span>(first);   <span class="comment">// Always lock smaller ID first</span>
+    <span class="function">lock</span>(second);
+    <span class="comment">// transfer amount</span>
+    <span class="function">unlock</span>(second);
+    <span class="function">unlock</span>(first);
+}
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Interactive: Deadlock Scenario Simulator</h2>
+            <p style="margin-bottom: 20px;">Simulate different resource allocation scenarios to see when deadlock occurs.</p>
+
+            <div class="controls">
+                <button onclick="simulateDeadlock()">Simulate Deadlock</button>
+                <button onclick="simulateSafe()">Simulate Safe Sequence</button>
+                <button onclick="clearOutput()">Clear Output</button>
+            </div>
+
+            <div class="output" id="output">Click a button to simulate a scenario...</div>
+        </div>
+
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2>Deadlock Detection and Recovery</h2>
+
+            <h3>Detection Methods</h3>
+            <ul>
+                <li><strong>Resource Allocation Graph:</strong> Detect circular wait patterns</li>
+                <li><strong>Banker's Algorithm:</strong> Check if state is safe before allocation</li>
+                <li><strong>Timeout:</strong> Kill processes that exceed time limits</li>
+                <li><strong>Wait-for Graph:</strong> Identify circular dependencies</li>
+            </ul>
+
+            <h3 style="margin-top: 20px;">Recovery Methods</h3>
+            <ol>
+                <li><strong>Process Termination:</strong> Kill one or more deadlocked processes</li>
+                <li><strong>Resource Preemption:</strong> Take resources from processes and reallocate</li>
+                <li><strong>Rollback:</strong> Restore processes to previous safe state</li>
+                <li><strong>Database Transactions:</strong> Automatic abort and retry</li>
+            </ol>
+        </div>
+
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2>Summary: Deadlock Handling Strategies</h2>
+            <table>
+                <tr>
+                    <th>Strategy</th>
+                    <th>Approach</th>
+                    <th>Pros</th>
+                    <th>Cons</th>
+                </tr>
+                <tr>
+                    <td><strong>Prevention</strong></td>
+                    <td>Break a necessary condition</td>
+                    <td>Guarantees no deadlock</td>
+                    <td>Low resource utilization</td>
+                </tr>
+                <tr>
+                    <td><strong>Avoidance</strong></td>
+                    <td>Banker's Algorithm (safe states)</td>
+                    <td>Better resource utilization</td>
+                    <td>Complex, overhead</td>
+                </tr>
+                <tr>
+                    <td><strong>Detection</strong></td>
+                    <td>Detect then recover</td>
+                    <td>Flexible, no prevention overhead</td>
+                    <td>Requires recovery mechanism</td>
+                </tr>
+                <tr>
+                    <td><strong>Ignorance</strong></td>
+                    <td>Assume deadlock won't happen</td>
+                    <td>Simplest, no overhead</td>
+                    <td>Risk of system hangs</td>
+                </tr>
+            </table>
+        </div>
+
+        <footer style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd; color: #666;">
+            <p>Operating Systems - Task 13: Deadlocks</p>
+            <a href="index.html" class="nav-link">← Back to Home</a>
+        </footer>
+    </div>
+
+    <script>
+        function simulateDeadlock() {
+            const output = document.getElementById('output');
+
+            let result = `=== DEADLOCK SCENARIO ===\n\n`;
+            result += `Time: 0ms\n`;
+            result += `├─ Process P1: Requests Resource R1\n`;
+            result += `│  └─ R1 allocated to P1\n\n`;
+
+            result += `Time: 1ms\n`;
+            result += `├─ Process P2: Requests Resource R2\n`;
+            result += `│  └─ R2 allocated to P2\n\n`;
+
+            result += `Time: 2ms\n`;
+            result += `├─ Process P1: Requests Resource R2\n`;
+            result += `│  └─ R2 is held by P2\n`;
+            result += `│  └─ P1 WAITS for R2 ⏳\n\n`;
+
+            result += `Time: 3ms\n`;
+            result += `├─ Process P2: Requests Resource R1\n`;
+            result += `│  └─ R1 is held by P1\n`;
+            result += `│  └─ P2 WAITS for R1 ⏳\n\n`;
+
+            result += `=== CIRCULAR WAIT DETECTED ===\n`;
+            result += `P1 → R2 → P2 → R1 → P1\n\n`;
+
+            result += `SYSTEM STATE: 🔴 DEADLOCK\n`;
+            result += `├─ P1: Running={R1}, Waiting={R2}\n`;
+            result += `├─ P2: Running={R2}, Waiting={R1}\n`;
+            result += `└─ Both processes stuck indefinitely\n\n`;
+
+            result += `ANALYSIS:\n`;
+            result += `✓ Mutual Exclusion: YES (resources exclusive)\n`;
+            result += `✓ Hold and Wait: YES (holding while waiting)\n`;
+            result += `✓ No Preemption: YES (can't take resources)\n`;
+            result += `✓ Circular Wait: YES (P1→P2→P1)\n\n`;
+            result += `RESULT: All 4 conditions present = DEADLOCK ⚠️\n`;
+
+            output.textContent = result;
+        }
+
+        function simulateSafe() {
+            const output = document.getElementById('output');
+
+            let result = `=== SAFE SEQUENCE (ORDERED LOCKS) ===\n\n`;
+            result += `Strategy: Always acquire locks in ID order\n`;
+            result += `R1 < R2 (by ID)\n\n`;
+
+            result += `Time: 0ms\n`;
+            result += `├─ Process P1: Requests R1 (smaller ID)\n`;
+            result += `│  └─ R1 allocated to P1 ✓\n\n`;
+
+            result += `Time: 1ms\n`;
+            result += `├─ Process P1: Requests R2 (larger ID)\n`;
+            result += `│  └─ R2 allocated to P1 ✓\n`;
+            result += `│  └─ P1 now has {R1, R2}\n\n`;
+
+            result += `Time: 2ms\n`;
+            result += `├─ Process P1: Executes critical section\n`;
+            result += `│  └─ P1 running...\n\n`;
+
+            result += `Time: 3ms\n`;
+            result += `├─ Process P1: Releases R2, R1\n`;
+            result += `│  └─ Resources freed ✓\n\n`;
+
+            result += `Time: 4ms\n`;
+            result += `├─ Process P2: Requests R1 (smaller ID)\n`;
+            result += `│  └─ R1 allocated to P2 ✓\n\n`;
+
+            result += `Time: 5ms\n`;
+            result += `├─ Process P2: Requests R2 (larger ID)\n`;
+            result += `│  └─ R2 allocated to P2 ✓\n`;
+            result += `│  └─ P2 now has {R1, R2}\n\n`;
+
+            result += `SYSTEM STATE: 🟢 NO DEADLOCK\n`;
+            result += `├─ P1: Completed execution\n`;
+            result += `├─ P2: Executing critical section\n`;
+            result += `└─ Sequential execution (no circular wait)\n\n`;
+
+            result += `KEY INSIGHT:\n`;
+            result += `By enforcing a total ordering on resource requests,\n`;
+            result += `we eliminate the circular wait condition.\n`;
+            result += `Without circular wait, deadlock cannot occur ✓\n`;
+
+            output.textContent = result;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = 'Click a button to simulate a scenario...';
+        }
+    </script>
+</body>
+</html>

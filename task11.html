@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direct Memory Access (DMA) — OS Concepts</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;800&display=swap');
+
+  :root {
+    --bg: #050d1a;
+    --panel: #0a1628;
+    --border: #1a3a5c;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #39ff14;
+    --cpu-color: #7c3aed;
+    --mem-color: #0ea5e9;
+    --device-color: #f59e0b;
+    --dma-color: #00d4ff;
+    --bus-color: #39ff14;
+    --text: #c8e6f0;
+    --muted: #4a7a99;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .badge {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 12px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: clamp(28px, 6vw, 52px);
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    margin-top: 12px;
+    font-size: 15px;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 1px;
+  }
+
+  /* Section titles */
+  .section-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Cards */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    margin-bottom: 28px;
+  }
+  .card h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .card p {
+    font-size: 14.5px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+  .card p + p { margin-top: 10px; }
+  .highlight { color: var(--accent); font-weight: 600; }
+  .highlight2 { color: var(--accent2); font-weight: 600; }
+  .highlight3 { color: var(--accent3); font-weight: 600; }
+
+  /* Two-column comparison */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .compare-box h3 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+  }
+  .compare-box.bad h3 { color: var(--accent2); border-bottom: 2px solid var(--accent2); padding-bottom: 8px; }
+  .compare-box.good h3 { color: var(--accent3); border-bottom: 2px solid var(--accent3); padding-bottom: 8px; }
+  .compare-box ul { list-style: none; padding: 0; }
+  .compare-box ul li {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--text);
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .compare-box.bad ul li::before { content: '✗ '; color: var(--accent2); position: absolute; left: 0; }
+  .compare-box.good ul li::before { content: '✓ '; color: var(--accent3); position: absolute; left: 0; }
+
+  /* === ANIMATION AREA === */
+  .sim-wrapper {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    margin-bottom: 28px;
+  }
+
+  .sim-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .sim-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* Mode tabs */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .tab {
+    padding: 8px 20px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .tab.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,255,0.06);
+  }
+  .tab:hover:not(.active) {
+    border-color: var(--muted);
+    color: var(--text);
+  }
+
+  /* Architecture diagram */
+  .arch {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .arch-block {
+    flex: 1;
+    min-width: 90px;
+    background: #071120;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 10px;
+    text-align: center;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .arch-block .icon { font-size: 24px; margin-bottom: 6px; }
+  .arch-block .label {
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .arch-block.cpu-block { border-color: var(--cpu-color); }
+  .arch-block.mem-block { border-color: var(--mem-color); }
+  .arch-block.dma-block { border-color: var(--dma-color); }
+  .arch-block.device-block { border-color: var(--device-color); }
+
+  .arch-block.active-block {
+    box-shadow: 0 0 18px currentColor;
+  }
+  .arch-block.cpu-block .label { color: #a78bfa; }
+  .arch-block.mem-block .label { color: var(--mem-color); }
+  .arch-block.dma-block .label { color: var(--dma-color); }
+  .arch-block.device-block .label { color: var(--device-color); }
+
+  /* Bus lines between blocks */
+  .arch-arrow {
+    color: var(--border);
+    font-size: 20px;
+    flex-shrink: 0;
+    transition: color 0.3s;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .arch-arrow.lit { color: var(--accent3); }
+
+  /* Log / step display */
+  .log-box {
+    background: #020810;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    min-height: 120px;
+    max-height: 160px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+  }
+  .log-line { opacity: 0; animation: fadein 0.3s forwards; }
+  .log-line.cpu { color: #a78bfa; }
+  .log-line.dma { color: var(--accent); }
+  .log-line.mem { color: var(--mem-color); }
+  .log-line.device { color: var(--device-color); }
+  .log-line.interrupt { color: var(--accent3); }
+  .log-line.sys { color: var(--muted); }
+
+  @keyframes fadein { to { opacity: 1; } }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 9px 22px;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: rgba(0,212,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-primary:hover { background: rgba(0,212,255,0.2); }
+  .btn-secondary {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--muted);
+  }
+  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+
+  /* Progress bar */
+  .progress-wrap {
+    background: #020810;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    height: 6px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    width: 0%;
+    transition: width 0.4s ease;
+    border-radius: 3px;
+  }
+
+  /* CPU busy indicator */
+  .cpu-status-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .status-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: #020810;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .status-dot.busy { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+  .status-dot.idle { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+  .status-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+  /* Steps list */
+  .steps-list {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+  }
+  .steps-list li {
+    counter-increment: step;
+    position: relative;
+    padding: 12px 12px 12px 48px;
+    border-left: 2px solid var(--border);
+    margin-bottom: 4px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--panel);
+    border-radius: 0 6px 6px 0;
+  }
+  .steps-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    width: 22px; height: 22px;
+    background: var(--accent);
+    color: var(--bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 22px;
+    text-align: center;
+  }
+
+  /* Modes description */
+  .mode-info {
+    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+    background: rgba(0,212,255,0.04);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* Table */
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-bottom: 0;
+  }
+  .info-table th {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: #020810;
+  }
+  .info-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(26,58,92,0.5);
+    color: var(--text);
+    vertical-align: top;
+  }
+  .info-table tr:last-child td { border-bottom: none; }
+  .info-table tr:hover td { background: rgba(0,212,255,0.03); }
+
+  /* footer note */
+  .footnote {
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 40px;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="badge">Topic 11 — Architecture &amp; Core Concepts</div>
+    <h1>Direct <span>Memory</span> Access</h1>
+    <p class="subtitle">How devices move data without burdening the CPU</p>
+    <a href="index.html" style="display:inline-block;margin-top:12px;color:#93c5fd;text-decoration:none;font-size:14px;">&larr; Back to Home</a>
+  </header>
+
+  <!-- What is DMA -->
+  <p class="section-title">What is DMA?</p>
+  <div class="card">
+    <h2>The Core Idea</h2>
+    <p>
+      <span class="highlight">Direct Memory Access (DMA)</span> is a hardware feature that allows
+      certain devices — such as disk controllers, network cards, and sound cards — to transfer data
+      directly to and from main memory <em>without</em> requiring the CPU to handle every byte of the transfer.
+    </p>
+    <p>
+      A dedicated chip called the <span class="highlight">DMA Controller (DMAC)</span> manages the
+      transfer on behalf of the device. The CPU only needs to <em>set up</em> the transfer and is
+      then <span class="highlight2">free to do other work</span> while the data moves. When the transfer
+      is complete, the DMA controller raises an <span class="highlight3">interrupt</span> to notify the CPU.
+    </p>
+    <p>
+      DMA is fundamental to high-performance I/O. Without it, reading a large file from disk would force
+      the CPU to sit in a busy loop copying bytes — wasting processing time that could be used for computation.
+    </p>
+  </div>
+
+  <!-- Without vs With DMA -->
+  <p class="section-title">Without DMA vs. With DMA</p>
+  <div class="compare-grid">
+    <div class="compare-box bad">
+      <h3>Without DMA (Programmed I/O)</h3>
+      <ul>
+        <li>CPU requests data from device</li>
+        <li>CPU polls or waits for each byte/word</li>
+        <li>CPU copies every byte to memory manually</li>
+        <li>CPU is 100% occupied during transfer</li>
+        <li>No other process can use CPU while transfer runs</li>
+        <li>Wastes CPU cycles on trivial data movement</li>
+      </ul>
+    </div>
+    <div class="compare-box good">
+      <h3>With DMA</h3>
+      <ul>
+        <li>CPU tells DMAC: source, destination, size</li>
+        <li>DMA Controller takes over the bus</li>
+        <li>Data moves directly: Device ↔ Memory</li>
+        <li>CPU is free to execute other processes</li>
+        <li>Transfer runs in parallel with CPU work</li>
+        <li>Interrupt signals CPU when transfer is done</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Interactive Simulation -->
+  <p class="section-title">Interactive Simulation</p>
+  <div class="sim-wrapper">
+    <div class="sim-title">// DMA Transfer Simulator</div>
+    <div class="sim-desc">Choose a mode and press Run to see how a data transfer plays out step-by-step.</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="setMode('pio')" id="tab-pio">Programmed I/O</button>
+      <button class="tab" onclick="setMode('dma')" id="tab-dma">DMA Transfer</button>
+    </div>
+
+    <div id="mode-info" class="mode-info"></div>
+
+    <!-- Architecture blocks -->
+    <div class="arch">
+      <div class="arch-block cpu-block" id="blk-cpu">
+        <div class="icon">🖥️</div>
+        <div class="label">CPU</div>
+      </div>
+      <div class="arch-arrow" id="arr-cpu-dma">⟵⟶</div>
+      <div class="arch-block dma-block" id="blk-dma">
+        <div class="icon">⚙️</div>
+        <div class="label">DMA Ctrl</div>
+      </div>
+      <div class="arch-arrow" id="arr-dma-mem">⟵⟶</div>
+      <div class="arch-block mem-block" id="blk-mem">
+        <div class="icon">🗄️</div>
+        <div class="label">Memory</div>
+      </div>
+      <div class="arch-arrow" id="arr-dma-dev">⟵⟶</div>
+      <div class="arch-block device-block" id="blk-dev">
+        <div class="icon">💾</div>
+        <div class="label">Device</div>
+      </div>
+    </div>
+
+    <!-- Status chips -->
+    <div class="cpu-status-row">
+      <div class="status-chip">
+        <div class="status-dot" id="dot-cpu"></div>
+        <span id="label-cpu">CPU: IDLE</span>
+      </div>
+      <div class="status-chip">
+        <div class="status-dot" id="dot-dma"></div>
+        <span id="label-dma">DMA: IDLE</span>
+      </div>
+      <div class="status-chip">
+        <div class="status-dot" id="dot-bus"></div>
+        <span id="label-bus">BUS: FREE</span>
+      </div>
+    </div>
+
+    <div class="progress-wrap"><div class="progress-bar" id="prog"></div></div>
+    <div class="log-box" id="log"></div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="btn-run" onclick="runSim()">▶ Run Simulation</button>
+      <button class="btn btn-secondary" onclick="resetSim()">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- How DMA works step by step -->
+  <p class="section-title">How DMA Works — Step by Step</p>
+  <div class="card">
+    <ol class="steps-list">
+      <li>The CPU identifies that an I/O transfer is needed (e.g., reading a file from disk).</li>
+      <li>The CPU programs the DMA Controller with: the <strong>source address</strong> (device buffer), the <strong>destination address</strong> (memory location), the <strong>transfer size</strong> (number of bytes), and the <strong>direction</strong> (read or write).</li>
+      <li>The CPU issues a "start transfer" command to the DMAC and then <strong>continues executing other instructions</strong>.</li>
+      <li>The DMA Controller requests control of the system bus. The CPU grants bus access (called <em>cycle stealing</em> or <em>burst mode</em>).</li>
+      <li>The DMAC transfers data directly between the device and memory, byte by byte or in blocks, <strong>without CPU involvement</strong>.</li>
+      <li>Once the transfer is complete, the DMA Controller raises a hardware <strong>interrupt</strong> to the CPU.</li>
+      <li>The CPU handles the interrupt, acknowledges the transfer is done, and continues its work with the data now ready in memory.</li>
+    </ol>
+  </div>
+
+  <!-- DMA Transfer Modes -->
+  <p class="section-title">DMA Transfer Modes</p>
+  <div class="card">
+    <h2>How the DMA Controller Uses the Bus</h2>
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>Mode</th>
+          <th>Description</th>
+          <th>CPU Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="highlight">Burst Mode</span></td>
+          <td>DMAC holds the bus for the entire transfer duration, transferring all data in one continuous block.</td>
+          <td>CPU cannot use the bus during the burst. High throughput but CPU is temporarily bus-locked.</td>
+        </tr>
+        <tr>
+          <td><span class="highlight2">Cycle Stealing</span></td>
+          <td>DMAC transfers one word at a time, temporarily "stealing" a single bus cycle, then releases it.</td>
+          <td>CPU experiences small periodic delays. Smooth interleaving of CPU and DMA activity.</td>
+        </tr>
+        <tr>
+          <td><span class="highlight3">Transparent Mode</span></td>
+          <td>DMAC only uses the bus when the CPU is not using it (CPU is executing instructions that don't need the bus).</td>
+          <td>No CPU slowdown at all. Slowest DMA mode but completely non-intrusive.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Real-world uses -->
+  <p class="section-title">Where DMA Is Used</p>
+  <div class="card">
+    <table class="info-table">
+      <thead>
+        <tr><th>Device / Use Case</th><th>Why DMA Matters</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>💾 Disk / SSD Controllers</td><td>Transfers large blocks of file data to RAM without tying up the CPU.</td></tr>
+        <tr><td>🌐 Network Interface Cards</td><td>Moves incoming/outgoing packet data directly into kernel buffers.</td></tr>
+        <tr><td>🔊 Sound Cards</td><td>Streams audio data to/from memory in real-time for continuous playback.</td></tr>
+        <tr><td>📷 GPUs &amp; Video</td><td>Rapidly copies large frame buffers and textures between memory regions.</td></tr>
+        <tr><td>📡 USB Controllers</td><td>Handles bulk USB transfers to memory with minimal CPU involvement.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footnote">OS Interactive Portfolio &nbsp;|&nbsp; Topic 11: Direct Memory Access &nbsp;|&nbsp; Built with HTML / CSS / JS</div>
+
+</div>
+
+<script>
+  let mode = 'pio';
+  let running = false;
+  let simTimer = null;
+
+  const modeDescriptions = {
+    pio: 'Programmed I/O (PIO): The CPU handles every byte of the transfer itself. It must poll the device or wait for each byte and copy it directly. The CPU is fully occupied and cannot do any other work during the entire transfer.',
+    dma: 'DMA Transfer: The CPU sets up the DMA Controller once, then steps aside. The DMAC handles the entire data transfer autonomously between the device and memory. The CPU is free to run other processes. An interrupt signals completion.'
+  };
+
+  const pioSteps = [
+    { delay: 600,  type: 'cpu',     text: '[CPU] Initiating I/O request to disk device...' },
+    { delay: 700,  type: 'device',  text: '[DEVICE] Disk preparing data buffer...' },
+    { delay: 600,  type: 'cpu',     text: '[CPU] Polling device — is data ready? (attempt 1)' },
+    { delay: 500,  type: 'device',  text: '[DEVICE] Not ready yet.' },
+    { delay: 600,  type: 'cpu',     text: '[CPU] Polling device — is data ready? (attempt 2)' },
+    { delay: 500,  type: 'device',  text: '[DEVICE] Not ready yet.' },
+    { delay: 600,  type: 'cpu',     text: '[CPU] Polling device — is data ready? (attempt 3)' },
+    { delay: 500,  type: 'device',  text: '[DEVICE] Data ready!' },
+    { delay: 700,  type: 'cpu',     text: '[CPU] Copying byte 1/8 from device → memory...' },
+    { delay: 400,  type: 'mem',     text: '[MEM] Byte 1 written.' },
+    { delay: 700,  type: 'cpu',     text: '[CPU] Copying byte 2/8 from device → memory...' },
+    { delay: 400,  type: 'mem',     text: '[MEM] Byte 2 written.' },
+    { delay: 700,  type: 'cpu',     text: '[CPU] Copying byte 3/8 from device → memory...' },
+    { delay: 400,  type: 'mem',     text: '[MEM] Byte 3 written.' },
+    { delay: 700,  type: 'cpu',     text: '[CPU] Copying byte 4/8 from device → memory...' },
+    { delay: 400,  type: 'mem',     text: '[MEM] Byte 4 written.' },
+    { delay: 700,  type: 'cpu',     text: '[CPU] Copying byte 5/8 from device → memory...' },
+    { delay: 400,  type: 'mem',     text: '[MEM] Byte 5 written.' },
+    { delay: 700,  type: 'cpu',     text: '[CPU] Copying byte 6/8 from device → memory...' },
+    { delay: 400,  type: 'mem',     text: '[MEM] Byte 6 written.' },
+    { delay: 700,  type: 'cpu',     text: '[CPU] Copying byte 7/8 from device → memory...' },
+    { delay: 400,  type: 'mem',     text: '[MEM] Byte 7 written.' },
+    { delay: 700,  type: 'cpu',     text: '[CPU] Copying byte 8/8 from device → memory...' },
+    { delay: 400,  type: 'mem',     text: '[MEM] Byte 8 written.' },
+    { delay: 600,  type: 'cpu',     text: '[CPU] Transfer complete. CPU was busy the ENTIRE time.' },
+    { delay: 400,  type: 'sys',     text: '─── Transfer finished. CPU utilization for I/O: ~100% ───' },
+  ];
+
+  const dmaSteps = [
+    { delay: 600,  type: 'cpu',       text: '[CPU] Programming DMA Controller: src=0xDEV, dst=0x3F00, size=8' },
+    { delay: 500,  type: 'dma',       text: '[DMAC] Configuration received. Requesting bus access...' },
+    { delay: 500,  type: 'cpu',       text: '[CPU] Bus grant given to DMAC. CPU continuing other work →' },
+    { delay: 400,  type: 'cpu',       text: '[CPU] Executing process A... (unrelated to I/O)' },
+    { delay: 500,  type: 'dma',       text: '[DMAC] Contacting device, reading data block...' },
+    { delay: 400,  type: 'device',    text: '[DEVICE] Sending data block to DMAC.' },
+    { delay: 600,  type: 'dma',       text: '[DMAC] Writing block directly to memory at 0x3F00...' },
+    { delay: 400,  type: 'cpu',       text: '[CPU] Executing process B... (still unrelated to I/O)' },
+    { delay: 400,  type: 'mem',       text: '[MEM] Bytes 1-4 written by DMAC.' },
+    { delay: 500,  type: 'dma',       text: '[DMAC] Continuing transfer...' },
+    { delay: 400,  type: 'cpu',       text: '[CPU] Executing process A... (still free)' },
+    { delay: 400,  type: 'mem',       text: '[MEM] Bytes 5-8 written by DMAC.' },
+    { delay: 600,  type: 'dma',       text: '[DMAC] Transfer complete. Raising interrupt signal...' },
+    { delay: 500,  type: 'interrupt', text: '[INTERRUPT] ⚡ Hardware interrupt raised to CPU!' },
+    { delay: 500,  type: 'cpu',       text: '[CPU] Interrupt received. Acknowledging DMAC...' },
+    { delay: 400,  type: 'dma',       text: '[DMAC] Releasing bus. Returning to idle.' },
+    { delay: 400,  type: 'cpu',       text: '[CPU] Data is in memory. Resuming normal execution.' },
+    { delay: 400,  type: 'sys',       text: '─── Transfer finished. CPU utilization for I/O: ~5% ───' },
+  ];
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('tab-pio').classList.toggle('active', m === 'pio');
+    document.getElementById('tab-dma').classList.toggle('active', m === 'dma');
+    document.getElementById('mode-info').textContent = modeDescriptions[m];
+    resetSim();
+  }
+
+  function setStatus(cpuState, dmaState, busState) {
+    const dotCpu = document.getElementById('dot-cpu');
+    const dotDma = document.getElementById('dot-dma');
+    const dotBus = document.getElementById('dot-bus');
+
+    dotCpu.className = 'status-dot ' + (cpuState === 'BUSY' ? 'busy' : cpuState === 'RUNNING' ? 'active' : 'idle');
+    document.getElementById('label-cpu').textContent = 'CPU: ' + cpuState;
+
+    dotDma.className = 'status-dot ' + (dmaState === 'ACTIVE' ? 'active' : 'idle');
+    document.getElementById('label-dma').textContent = 'DMA: ' + dmaState;
+
+    dotBus.className = 'status-dot ' + (busState === 'DMA' ? 'active' : busState === 'CPU' ? 'busy' : 'idle');
+    document.getElementById('label-bus').textContent = 'BUS: ' + busState;
+  }
+
+  function addLog(type, text) {
+    const log = document.getElementById('log');
+    const line = document.createElement('div');
+    line.className = 'log-line ' + type;
+    line.textContent = text;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function setProgress(pct) {
+    document.getElementById('prog').style.width = pct + '%';
+  }
+
+  function resetSim() {
+    if (simTimer) clearTimeout(simTimer);
+    running = false;
+    document.getElementById('log').innerHTML = '';
+    setProgress(0);
+    setStatus('IDLE', 'IDLE', 'FREE');
+    document.getElementById('btn-run').disabled = false;
+    document.getElementById('btn-run').textContent = '▶ Run Simulation';
+    // reset arch highlights
+    ['blk-cpu','blk-dma','blk-mem','blk-dev'].forEach(id => {
+      document.getElementById(id).classList.remove('active-block');
+    });
+    ['arr-cpu-dma','arr-dma-mem','arr-dma-dev'].forEach(id => {
+      document.getElementById(id).classList.remove('lit');
+    });
+  }
+
+  function runSim() {
+    if (running) return;
+    running = true;
+    document.getElementById('btn-run').disabled = true;
+    document.getElementById('btn-run').textContent = '⏳ Running...';
+    document.getElementById('log').innerHTML = '';
+    setProgress(0);
+
+    const steps = mode === 'pio' ? pioSteps : dmaSteps;
+    let cumDelay = 0;
+
+    steps.forEach((step, i) => {
+      cumDelay += step.delay;
+      simTimer = setTimeout(() => {
+        addLog(step.type, step.text);
+        setProgress(Math.round(((i + 1) / steps.length) * 100));
+
+        // Update status indicators based on step type and mode
+        if (mode === 'pio') {
+          if (step.type === 'cpu') setStatus('BUSY', 'IDLE', 'CPU');
+          if (step.type === 'device') setStatus('BUSY', 'IDLE', 'CPU');
+          if (step.type === 'mem') setStatus('BUSY', 'IDLE', 'CPU');
+          if (step.type === 'sys') setStatus('IDLE', 'IDLE', 'FREE');
+        } else {
+          if (step.type === 'cpu') setStatus('RUNNING', 'IDLE', 'FREE');
+          if (step.type === 'dma') setStatus('RUNNING', 'ACTIVE', 'DMA');
+          if (step.type === 'device') setStatus('RUNNING', 'ACTIVE', 'DMA');
+          if (step.type === 'mem') setStatus('RUNNING', 'ACTIVE', 'DMA');
+          if (step.type === 'interrupt') setStatus('RUNNING', 'ACTIVE', 'FREE');
+          if (step.type === 'sys') setStatus('IDLE', 'IDLE', 'FREE');
+        }
+
+        // Highlight arch blocks
+        ['blk-cpu','blk-dma','blk-mem','blk-dev'].forEach(id =>
+          document.getElementById(id).classList.remove('active-block'));
+        ['arr-cpu-dma','arr-dma-mem','arr-dma-dev'].forEach(id =>
+          document.getElementById(id).classList.remove('lit'));
+
+        if (step.type === 'cpu') document.getElementById('blk-cpu').classList.add('active-block');
+        if (step.type === 'dma') {
+          document.getElementById('blk-dma').classList.add('active-block');
+          document.getElementById('arr-cpu-dma').classList.add('lit');
+        }
+        if (step.type === 'mem') {
+          document.getElementById('blk-mem').classList.add('active-block');
+          document.getElementById('arr-dma-mem').classList.add('lit');
+        }
+        if (step.type === 'device') {
+          document.getElementById('blk-dev').classList.add('active-block');
+          document.getElementById('arr-dma-dev').classList.add('lit');
+        }
+        if (step.type === 'interrupt') {
+          document.getElementById('blk-dma').classList.add('active-block');
+          document.getElementById('blk-cpu').classList.add('active-block');
+        }
+
+        if (i === steps.length - 1) {
+          running = false;
+          document.getElementById('btn-run').disabled = false;
+          document.getElementById('btn-run').textContent = '▶ Run Again';
+        }
+      }, cumDelay);
+    });
+  }
+
+  // Init
+  document.getElementById('mode-info').textContent = modeDescriptions['pio'];
+  setStatus('IDLE', 'IDLE', 'FREE');
+</script>
+</body>
+</html>

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>write() System Call</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; color: #222; }
+
+.hero {
+  background: #1a1a2e;
+  color: white;
+  padding: 60px 40px;
+  text-align: center;
+}
+.hero .badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 4px 16px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  color: #aaa;
+}
+.hero h1 { font-size: 52px; font-weight: 700; margin-bottom: 10px; }
+.hero h1 span { color: #00d4aa; }
+.hero p { color: #aaa; font-size: 16px; margin-bottom: 24px; }
+.hero .sig {
+  display: inline-block;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-family: monospace;
+  font-size: 15px;
+  color: #e2e8f0;
+}
+.hero .sig .ret { color: #c084fc; }
+.hero .sig .fn  { color: #00d4aa; }
+
+.container { max-width: 820px; margin: 0 auto; padding: 0 24px 80px; }
+
+.section { margin-top: 56px; }
+.section h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #00d4aa;
+  display: inline-block;
+}
+.section p { color: #444; line-height: 1.75; font-size: 15px; margin-bottom: 12px; }
+
+pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 10px;
+  padding: 20px 22px;
+  font-family: monospace;
+  font-size: 13.5px;
+  line-height: 1.8;
+  overflow-x: auto;
+  margin-top: 14px;
+}
+.kw  { color: #c586c0; }
+.fn  { color: #4ec9b0; }
+.str { color: #ce9178; }
+.num { color: #b5cea8; }
+.cm  { color: #6a9955; }
+.tp  { color: #569cd6; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 18px; }
+.card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 6px; font-family: monospace; }
+.card .value { font-family: monospace; font-size: 22px; font-weight: 700; }
+.card p { font-size: 13px; color: #555; margin-top: 6px; line-height: 1.55; }
+.card.ok   .value { color: #16a34a; }
+.card.err  .value { color: #dc2626; }
+.card.info .value { color: #2563eb; }
+
+.fd-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+.fd-table th { background: #1a1a2e; color: white; padding: 10px 16px; text-align: left; font-weight: 500; }
+.fd-table td { padding: 12px 16px; border-bottom: 1px solid #e5e5e5; background: white; }
+.fd-table tr:last-child td { border-bottom: none; }
+.fd-table td:first-child { font-family: monospace; font-weight: 700; color: #00a882; font-size: 16px; }
+.fd-table tr:nth-child(2) td { background: #f0fdf9; }
+
+.note {
+  background: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #555;
+  margin-top: 16px;
+}
+.note strong { color: #b45309; }
+
+.ex-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 18px; }
+.ex-box { background: white; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; }
+.ex-box .ex-top { background: #f5f5f5; padding: 8px 14px; display: flex; gap: 6px; align-items: center; border-bottom: 1px solid #e0e0e0; }
+.ex-box .ex-top .dot { width: 10px; height: 10px; border-radius: 50%; }
+.ex-box .ex-top .lbl { font-size: 11px; color: #888; font-family: monospace; margin-left: 4px; }
+.ex-box pre { border-radius: 0; margin: 0; font-size: 12px; }
+.ex-box .result { padding: 10px 14px; font-family: monospace; font-size: 13px; }
+.ex-box .result .rl { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.ok-text   { color: #16a34a; font-weight: 700; }
+.warn-text { color: #d97706; font-weight: 700; }
+.err-text  { color: #dc2626; font-weight: 700; }
+
+.demo-box { background: white; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; margin-top: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.demo-bar { background: #1a1a2e; padding: 12px 18px; display: flex; align-items: center; gap: 7px; }
+.demo-bar .dot { width: 11px; height: 11px; border-radius: 50%; }
+.demo-bar span { font-family: monospace; font-size: 12px; color: #666; margin-left: 8px; }
+.demo-inner { padding: 22px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media(max-width:560px){ .form-grid { grid-template-columns: 1fr; } }
+label { display: block; font-size: 12px; color: #777; margin-bottom: 5px; font-family: monospace; text-transform: uppercase; letter-spacing: 0.5px; }
+select, input { width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 7px; font-family: monospace; font-size: 13px; color: #222; background: #fafafa; outline: none; }
+select:focus, input:focus { border-color: #00d4aa; }
+.run-btn { margin-top: 16px; background: #1a1a2e; color: white; border: none; padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.run-btn:hover { background: #2d2d4e; }
+.clear-btn { margin-top: 16px; margin-left: 10px; background: transparent; color: #999; border: 1px solid #ddd; padding: 10px 18px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+.terminal { background: #1e1e1e; border-radius: 8px; padding: 16px 18px; font-family: monospace; font-size: 13px; line-height: 1.9; min-height: 120px; max-height: 200px; overflow-y: auto; margin-top: 16px; }
+.tline { opacity: 0; transform: translateX(-4px); transition: opacity 0.25s, transform 0.25s; }
+.tline.show { opacity: 1; transform: translateX(0); }
+.tok  { color: #4ec9b0; }
+.terr { color: #f48771; }
+.tinfo{ color: #9cdcfe; }
+.tcmd { color: #dcdcaa; }
+.twarn{ color: #ce9178; }
+.tdim { color: #6a9955; }
+
+footer { background: #1a1a2e; color: #666; text-align: center; padding: 28px; font-size: 12px; font-family: monospace; }
+footer span { color: #00d4aa; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>The <span>write()</span> System Call</h1>
+  <a href="index.html" style="display:inline-block;margin-top:12px;color:#93c5fd;text-decoration:none;font-size:14px;">&larr; Back to Home</a>
+</div>
+
+<div class="container">
+
+  <div class="section">
+    <h2>What is write()?</h2>
+    <p>
+      <code>write()</code> is a system call from the POSIX standard, available through <code>#include &lt;unistd.h&gt;</code>.
+      It writes a number of bytes from a buffer in your program directly to a file descriptor —
+      which could be the terminal screen, a file, or any other I/O resource.
+    </p>
+    <p>
+      Unlike <code>printf()</code>, which is a C library function that buffers output,
+      <code>write()</code> goes directly to the operating system kernel with no buffering in between.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>Parameters</h2>
+    <div class="cards">
+      <div class="card info">
+        <div class="label">fd</div>
+        <div class="value">int</div>
+        <p>The file descriptor to write to. 0 = stdin, 1 = stdout, 2 = stderr.</p>
+      </div>
+      <div class="card info">
+        <div class="label">buf</div>
+        <div class="value">void *</div>
+        <p>Pointer to the data you want to write.</p>
+      </div>
+      <div class="card info">
+        <div class="label">count</div>
+        <div class="value">size_t</div>
+        <p>How many bytes to write from the buffer.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>File Descriptors</h2>
+    <p>Every process starts with three file descriptors already open:</p>
+    <table class="fd-table">
+      <thead><tr><th>fd</th><th>Name</th><th>Where it goes</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>stdin</td><td>Keyboard input</td></tr>
+        <tr><td>1</td><td>stdout</td><td>Terminal screen — most common with write()</td></tr>
+        <tr><td>2</td><td>stderr</td><td>Terminal screen (for errors)</td></tr>
+        <tr><td>3+</td><td>files</td><td>Files opened with open() get fd starting from 3</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Return Value</h2>
+    <p>write() returns a <code>ssize_t</code> — a signed integer:</p>
+    <div class="cards">
+      <div class="card ok">
+        <div class="label">Success</div>
+        <div class="value">&gt; 0</div>
+        <p>Number of bytes actually written.</p>
+      </div>
+      <div class="card err">
+        <div class="label">Error</div>
+        <div class="value">-1</div>
+        <p>Something went wrong. Check errno for the reason.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Code Examples</h2>
+    <p>The count parameter controls exactly how many bytes get written:</p>
+
+    <div class="ex-grid">
+      <div class="ex-box">
+        <div class="ex-top">
+          <div class="dot" style="background:#ff5f57"></div>
+          <div class="dot" style="background:#febc2e"></div>
+          <div class="dot" style="background:#28c840"></div>
+          <span class="lbl">count == strlen</span>
+        </div>
+        <pre><span class="kw">#include</span> <span class="str">&lt;unistd.h&gt;</span>
+<span class="tp">int</span> <span class="fn">main</span>() {
+  <span class="fn">write</span>(<span class="num">1</span>, <span class="str">"Software"</span>, <span class="num">8</span>);
+}</pre>
+        <div class="result"><div class="rl">Output</div><span class="ok-text">Software</span></div>
+      </div>
+
+      <div class="ex-box">
+        <div class="ex-top">
+          <div class="dot" style="background:#ff5f57"></div>
+          <div class="dot" style="background:#febc2e"></div>
+          <div class="dot" style="background:#28c840"></div>
+          <span class="lbl">count &lt; strlen</span>
+        </div>
+        <pre><span class="kw">#include</span> <span class="str">&lt;unistd.h&gt;</span>
+<span class="tp">int</span> <span class="fn">main</span>() {
+  <span class="fn">write</span>(<span class="num">1</span>, <span class="str">"Software"</span>, <span class="num">5</span>);
+}</pre>
+        <div class="result"><div class="rl">Output</div><span class="warn-text">Softw</span></div>
+      </div>
+
+      <div class="ex-box">
+        <div class="ex-top">
+          <div class="dot" style="background:#ff5f57"></div>
+          <div class="dot" style="background:#febc2e"></div>
+          <div class="dot" style="background:#28c840"></div>
+          <span class="lbl">count &gt; strlen</span>
+        </div>
+        <pre><span class="kw">#include</span> <span class="str">&lt;unistd.h&gt;</span>
+<span class="tp">int</span> <span class="fn">main</span>() {
+  <span class="fn">write</span>(<span class="num">1</span>, <span class="str">"Software"</span>, <span class="num">20</span>);
+}</pre>
+        <div class="result"><div class="rl">Output</div><span class="err-text">Software. ' £ *- )1±</span></div>
+      </div>
+
+      <div class="ex-box">
+        <div class="ex-top">
+          <div class="dot" style="background:#ff5f57"></div>
+          <div class="dot" style="background:#febc2e"></div>
+          <div class="dot" style="background:#28c840"></div>
+          <span class="lbl">return value</span>
+        </div>
+        <pre><span class="kw">#include</span> <span class="str">&lt;unistd.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;stdio.h&gt;</span>
+<span class="tp">int</span> <span class="fn">main</span>() {
+  <span class="tp">int</span> n;
+  n = <span class="fn">write</span>(<span class="num">1</span>,<span class="str">"Software\n"</span>,<span class="num">9</span>);
+  <span class="fn">printf</span>(<span class="str">"n is %d\n"</span>, n);
+}</pre>
+        <div class="result"><div class="rl">Output</div><span class="ok-text">Software<br/>n is 9</span></div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Warning:</strong> When count is greater than the string length, write() reads beyond the buffer and prints garbage characters. Always make sure count matches the actual data size.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Writing to Files</h2>
+    <p>You can use <code>open()</code> to get a file descriptor, then pass it to <code>write()</code> to write to a file instead of the terminal:</p>
+
+    <pre><span class="kw">#include</span> <span class="str">&lt;unistd.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;fcntl.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;sys/types.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;sys/stat.h&gt;</span>
+<span class="tp">int</span> <span class="fn">main</span>() {
+    <span class="tp">int</span> fd;
+    fd = <span class="fn">open</span>(<span class="str">"output.txt"</span>, O_CREAT | O_WRONLY, <span class="num">0642</span>);
+    <span class="fn">write</span>(fd, <span class="str">"Hello from write()\n"</span>, <span class="num">19</span>);
+}</pre>
+
+    <pre style="margin-top:14px"><span class="kw">#include</span> <span class="str">&lt;unistd.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;fcntl.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;sys/types.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;sys/stat.h&gt;</span>
+<span class="tp">int</span> <span class="fn">main</span>() {
+    <span class="tp">int</span> fd;
+    fd = <span class="fn">open</span>(<span class="str">"output.txt"</span>, O_WRONLY | O_APPEND);
+    <span class="fn">write</span>(fd, <span class="str">"Appended line\n"</span>, <span class="num">14</span>);
+}</pre>
+  </div>
+
+  <div class="section">
+    <h2>Try it Yourself</h2>
+    <p>Simulate how write() behaves with different inputs:</p>
+    <div class="demo-box">
+      <div class="demo-bar">
+        <div class="dot" style="background:#ff5f57"></div>
+        <div class="dot" style="background:#febc2e"></div>
+        <div class="dot" style="background:#28c840"></div>
+        <span>write() simulator</span>
+      </div>
+      <div class="demo-inner">
+        <div class="form-grid">
+          <div>
+            <label>File Descriptor (fd)</label>
+            <select id="fd">
+              <option value="1">1 — stdout</option>
+              <option value="2">2 — stderr</option>
+              <option value="3">3 — output.txt</option>
+              <option value="-1">-1 — invalid fd</option>
+            </select>
+          </div>
+          <div>
+            <label>Buffer (buf)</label>
+            <input type="text" id="buf" value="Software"/>
+          </div>
+          <div>
+            <label>Count scenario</label>
+            <select id="mode">
+              <option value="exact">count == strlen</option>
+              <option value="less">count &lt; strlen</option>
+              <option value="more">count &gt; strlen</option>
+            </select>
+          </div>
+        </div>
+        <button class="run-btn" onclick="runSim()">▶ Run write()</button>
+        <button class="clear-btn" onclick="clearSim()">Clear</button>
+        <div class="terminal" id="terminal"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+
+<script>
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+function log(html) {
+  const t = document.getElementById('terminal');
+  const d = document.createElement('div');
+  d.className = 'tline';
+  d.innerHTML = html;
+  t.appendChild(d);
+  requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('show')));
+  t.scrollTop = t.scrollHeight;
+}
+
+function clearSim() {
+  document.getElementById('terminal').innerHTML = '';
+}
+
+async function runSim() {
+  clearSim();
+  const fd   = parseInt(document.getElementById('fd').value);
+  const buf  = document.getElementById('buf').value || 'Software';
+  const mode = document.getElementById('mode').value;
+  const fdNames = { 1: 'stdout', 2: 'stderr', 3: 'output.txt', '-1': 'INVALID' };
+
+  let count;
+  if (mode === 'exact') count = buf.length;
+  else if (mode === 'less') count = Math.max(1, Math.floor(buf.length / 2));
+  else count = buf.length + 10;
+
+  log(`<span class="tcmd">write(${fd}, "${buf}", ${count})</span>`);
+  await delay(300);
+  log(`<span class="tdim">  fd    = ${fd} → ${fdNames[fd] ?? 'fd ' + fd}</span>`);
+  await delay(250);
+  log(`<span class="tdim">  buf   = "${buf}"  (strlen = ${buf.length})</span>`);
+  await delay(250);
+  log(`<span class="tdim">  count = ${count}</span>`);
+  await delay(400);
+
+  if (fd === -1) {
+    log(`<span class="terr">  Error: EBADF — bad file descriptor</span>`);
+    await delay(200);
+    log(`<span class="terr">  write() returned -1</span>`);
+    return;
+  }
+
+  if (mode === 'exact') {
+    log(`<span class="tok">  Output: "${buf}"</span>`);
+    await delay(200);
+    log(`<span class="tok">  write() returned ${count}</span>`);
+  } else if (mode === 'less') {
+    log(`<span class="twarn">  Output: "${buf.substring(0, count)}"  (truncated)</span>`);
+    await delay(200);
+    log(`<span class="tok">  write() returned ${count}</span>`);
+  } else {
+    log(`<span class="terr">  Output: "${buf}" + garbage bytes beyond buffer</span>`);
+    await delay(200);
+    log(`<span class="tok">  write() returned ${buf.length}</span>`);
+  }
+
+  if (fd === 3) {
+    await delay(200);
+    log(`<span class="tinfo">  Data written to output.txt</span>`);
+  }
+}
+</script>
+</body>
+</html>

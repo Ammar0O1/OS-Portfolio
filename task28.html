@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 28 - dup() and dup2()</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0d1410;
+            color: #c2d4c5;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .page { max-width: 820px; margin: 0 auto; }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 20px;
+            border-bottom: 1px solid #1c281e;
+            margin-bottom: 30px;
+        }
+
+        .top-bar a {
+            color: #6a8070;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .top-bar a:hover { color: #5ec97a; }
+
+        .badge {
+            font-size: 12px;
+            color: #5ec97a;
+            background: rgba(94, 201, 122, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #fff;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        .intro { color: #6a8070; font-size: 15px; margin-bottom: 30px; }
+
+        h2 {
+            color: #5ec97a;
+            font-size: 18px;
+            margin-top: 30px;
+            margin-bottom: 12px;
+        }
+
+        p { margin-bottom: 14px; font-size: 15px; }
+
+        code {
+            font-family: monospace;
+            background: #1c281e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #8fd99e;
+        }
+
+        .box {
+            background: #141d16;
+            border-left: 3px solid #5ec97a;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .box p:last-child { margin-bottom: 0; }
+
+        .steps { margin: 15px 0; padding-left: 20px; }
+        .steps li { margin-bottom: 8px; font-size: 15px; }
+
+        pre {
+            background: #141d16;
+            border: 1px solid #1c281e;
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 15px 0;
+            color: #c2d4c5;
+        }
+
+        pre .comment { color: #5a7060; }
+        pre .key { color: #5ec97a; }
+        pre .num { color: #d9a85e; }
+
+        /* Demo */
+        .demo {
+            background: #141d16;
+            border: 1px solid #1c281e;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+
+        .fd-table {
+            font-family: monospace;
+            font-size: 13px;
+            margin-bottom: 18px;
+        }
+
+        .fd-row {
+            display: flex;
+            align-items: center;
+            border: 1px solid #1c281e;
+            margin-bottom: -1px;
+            background: #0d1410;
+        }
+
+        .fd-row.head {
+            color: #6a8070;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .fd-num {
+            width: 60px;
+            padding: 10px;
+            text-align: center;
+            border-right: 1px solid #1c281e;
+            color: #5ec97a;
+            font-weight: bold;
+        }
+
+        .fd-target {
+            flex: 1;
+            padding: 10px 14px;
+            transition: all 0.3s;
+        }
+
+        .fd-row.changed .fd-target {
+            background: rgba(94, 201, 122, 0.15);
+            color: #fff;
+        }
+
+        .fd-row.head .fd-num,
+        .fd-row.head .fd-target {
+            color: #6a8070;
+            font-weight: normal;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        button {
+            background: #5ec97a;
+            color: #0d1410;
+            border: none;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+
+        button:hover { background: #4eb86a; }
+
+        button.secondary {
+            background: #1c281e;
+            color: #c2d4c5;
+        }
+
+        button.secondary:hover { background: #26352a; }
+
+        .terminal {
+            background: #0d1410;
+            border: 1px solid #1c281e;
+            border-radius: 4px;
+            padding: 14px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 16px;
+            min-height: 60px;
+            color: #8fd99e;
+            line-height: 1.7;
+        }
+
+        .terminal .prompt { color: #5a7060; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #1c281e;
+        }
+
+        th { color: #5ec97a; font-size: 13px; }
+        td:first-child { font-family: monospace; color: #8fd99e; }
+
+        footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #1c281e;
+            text-align: center;
+            color: #4a5a4e;
+            font-size: 13px;
+        }
+
+        footer a { color: #5ec97a; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <div class="top-bar">
+        <a href="index.html">&larr; Back to Home</a>
+        <div class="badge">Task 28</div>
+    </div>
+
+    <h1>dup() and dup2()</h1>
+    <p class="intro">Two system calls that copy file descriptors. They are the trick behind how the shell redirects output, like when you type a command and send its output to a file.</p>
+
+    <h2>First, what is a file descriptor?</h2>
+    <div class="box">
+        <p>When a program opens a file, the operating system gives it a small number to refer to that file. This number is called a file descriptor (fd). Instead of using the file name every time, the program just uses this number.</p>
+    </div>
+
+    <p>Every process starts with three file descriptors already open:</p>
+    <table>
+        <tr>
+            <th>FD</th>
+            <th>Name</th>
+            <th>Used for</th>
+        </tr>
+        <tr>
+            <td>0</td>
+            <td>stdin</td>
+            <td>Standard input (keyboard)</td>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td>stdout</td>
+            <td>Standard output (screen)</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>stderr</td>
+            <td>Standard error (screen)</td>
+        </tr>
+    </table>
+
+    <h2>What does dup() do?</h2>
+    <p>The <code>dup()</code> system call takes a file descriptor and makes a copy of it. Two important things to remember:</p>
+    <ol class="steps">
+        <li><b>Creates an alias:</b> the new descriptor points to the exact same open file as the original.</li>
+        <li><b>Auto-assigns the index:</b> it automatically picks the lowest available (unused) number for the new copy.</li>
+    </ol>
+
+    <p>In this example we make a twin of file descriptor 1 (the screen). Writing to either one does the same thing:</p>
+
+    <pre><span class="comment">// FD 1 is always the screen (stdout)</span>
+<span class="comment">// Make a twin of FD 1. It gets the next free number, like 3.</span>
+<span class="key">int</span> screen_copy = dup(<span class="num">1</span>);
+
+<span class="comment">// Now writing to '1' or 'screen_copy' does the same thing</span>
+write(<span class="num">1</span>, <span class="num">"Hello from original!\n"</span>, <span class="num">21</span>);
+write(screen_copy, <span class="num">"Hello from the twin!\n"</span>, <span class="num">21</span>);
+close(screen_copy);</pre>
+
+    <p>And here is the important detail: because both descriptors point to the same open file, the twin continues writing exactly where the original left off:</p>
+
+    <pre><span class="comment">// fd1 points to "example.txt"</span>
+<span class="key">int</span> fd1 = open(<span class="num">"example.txt"</span>, O_WRONLY | O_CREAT | O_TRUNC, <span class="num">0644</span>);
+
+<span class="comment">// fd2 is a "twin" of fd1</span>
+<span class="key">int</span> fd2 = dup(fd1);
+
+write(fd1, <span class="num">"Hello "</span>, <span class="num">6</span>);   <span class="comment">// write with the original</span>
+write(fd2, <span class="num">"World!\n"</span>, <span class="num">7</span>); <span class="comment">// twin continues where fd1 stopped</span>
+
+<span class="comment">// example.txt now says: "Hello World!"</span>
+close(fd1);
+close(fd2);</pre>
+
+    <h2>What does dup2() do?</h2>
+    <p>The <code>dup2()</code> call lets you force a specific number for the new file descriptor (like forcing a file to take the slot for stdout). If that number is already open, <code>dup2()</code> automatically closes it for you first.</p>
+
+    <pre><span class="comment">// Open your file</span>
+<span class="key">int</span> file_fd = open(<span class="num">"output.txt"</span>, O_WRONLY | O_CREAT | O_TRUNC, <span class="num">0644</span>);
+
+<span class="comment">// The magic line: force FD 1 (stdout) to point to file_fd</span>
+<span class="comment">// It automatically closes the old FD 1 for you!</span>
+dup2(file_fd, <span class="num">1</span>);
+
+<span class="comment">// Now printf writes to output.txt instead of the screen</span>
+printf(<span class="num">"Hello from printf using dup2!\n"</span>);
+close(file_fd);</pre>
+
+    <p>You can also redirect just the errors. Here <code>stderr</code> (FD 2) is sent to a log file, while normal output still goes to the screen:</p>
+
+    <pre><span class="comment">// Open an error log file</span>
+<span class="key">int</span> log_fd = open(<span class="num">"errors.log"</span>, O_WRONLY | O_CREAT | O_TRUNC, <span class="num">0644</span>);
+
+<span class="comment">// Redirect stderr (FD 2) to the log file</span>
+dup2(log_fd, <span class="num">2</span>);
+
+printf(<span class="num">"This still shows up on your screen.\n"</span>);     <span class="comment">// goes to screen (FD 1)</span>
+fprintf(stderr, <span class="num">"ERROR: Something went wrong!\n"</span>); <span class="comment">// goes to errors.log</span>
+close(log_fd);</pre>
+
+    <p>This is exactly how output redirection works in the shell. When you type <code>ls > out.txt</code>, the shell uses <code>dup2()</code> to make file descriptor 1 (stdout) point to the file instead of the screen.</p>
+
+    <h2>See it in action</h2>
+    <p>This demo shows the file descriptor table. Watch what happens when we redirect stdout to a file using <code>dup2()</code>.</p>
+
+    <div class="demo">
+        <div class="fd-table" id="fdTable"></div>
+
+        <div class="controls">
+            <button onclick="openFile()">1. open("out.txt")</button>
+            <button onclick="runDup2()">2. dup2(fd, 1)</button>
+            <button class="secondary" onclick="resetDemo()">Reset</button>
+        </div>
+
+        <div class="terminal" id="terminal"><span class="prompt">$</span> ready...</div>
+    </div>
+
+    <h2>Why is this useful?</h2>
+    <ol class="steps">
+        <li><b>Output redirection:</b> send a program's output to a file instead of the screen (<code>command > file</code>).</li>
+        <li><b>Input redirection:</b> read a program's input from a file instead of the keyboard (<code>command &lt; file</code>).</li>
+        <li><b>Pipes:</b> connect the output of one program to the input of another (<code>cmd1 | cmd2</code>).</li>
+    </ol>
+
+    <p>The key idea: the program itself does not need to change. It still just writes to file descriptor 1. But because we redirected that descriptor, the output ends up somewhere else. This makes programs flexible and reusable.</p>
+
+    <footer>
+        Task 28: dup() and dup2()<br>
+        Created by Nastaran Rzgar Khano<br><br>
+        <a href="index.html">&larr; Back to Home</a>
+    </footer>
+
+</div>
+
+<script>
+    let fdState = {};
+
+    function initState() {
+        fdState = {
+            0: { target: 'stdin  (keyboard)', changed: false },
+            1: { target: 'stdout (screen)', changed: false },
+            2: { target: 'stderr (screen)', changed: false }
+        };
+    }
+
+    function render(changedFd) {
+        let html = '<div class="fd-row head"><div class="fd-num">FD</div><div class="fd-target">Points to</div></div>';
+        for (let fd in fdState) {
+            const cls = (parseInt(fd) === changedFd) ? 'fd-row changed' : 'fd-row';
+            html += '<div class="' + cls + '"><div class="fd-num">' + fd + '</div><div class="fd-target">' + fdState[fd].target + '</div></div>';
+        }
+        document.getElementById('fdTable').innerHTML = html;
+    }
+
+    function setTerminal(text) {
+        document.getElementById('terminal').innerHTML = '<span class="prompt">$</span> ' + text;
+    }
+
+    let fileOpened = false;
+
+    function openFile() {
+        if (fileOpened) {
+            setTerminal('out.txt is already open at fd 3.');
+            return;
+        }
+        fdState[3] = { target: 'out.txt (file)', changed: false };
+        fileOpened = true;
+        render(3);
+        setTerminal('open("out.txt") returned fd = 3. Now fd 3 points to the file.');
+    }
+
+    function runDup2() {
+        if (!fileOpened) {
+            setTerminal('You need to open the file first (step 1).');
+            return;
+        }
+        // dup2(3, 1): make fd 1 point to what fd 3 points to
+        fdState[1] = { target: 'out.txt (file)', changed: true };
+        render(1);
+        setTerminal('dup2(3, 1) done. fd 1 (stdout) now points to out.txt. Anything printed goes to the file, not the screen!');
+    }
+
+    function resetDemo() {
+        initState();
+        fileOpened = false;
+        render(-1);
+        setTerminal('ready...');
+    }
+
+    // Init
+    initState();
+    render(-1);
+</script>
+
+</body>
+</html>

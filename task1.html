@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCFS CPU Scheduler - OS Portfolio</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --white: #ffffff;
+            --border-radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        header {
+            border-bottom: 2px solid var(--accent-color);
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--accent-color);
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color);
+        }
+
+        .intro-section {
+            margin-bottom: 40px;
+        }
+
+        .intro-section h2 {
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+        }
+
+        .intro-section p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .highlight-box {
+            background-color: #e8f4fd;
+            border-left: 5px solid var(--accent-color);
+            padding: 15px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        .simulator-section {
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            margin-bottom: 40px;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: end;
+        }
+
+        .input-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-field label {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .btn-add { background-color: var(--accent-color); color: white; }
+        .btn-add:hover { background-color: #2980b9; }
+
+        .btn-run { background-color: var(--success-color); color: white; }
+        .btn-run:hover { background-color: #219150; }
+
+        .btn-clear { background-color: #e74c3c; color: white; margin-left: 10px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        .gantt-container {
+            margin: 30px 0;
+            overflow-x: auto;
+        }
+
+        .gantt-chart {
+            display: flex;
+            min-height: 80px;
+            border: 1px solid #333;
+            background: #eee;
+        }
+
+        .gantt-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid #fff;
+            position: relative;
+            min-width: 40px;
+            color: white;
+            font-weight: bold;
+            padding: 10px 0;
+        }
+
+        .idle-block {
+            background-color: #95a5a6;
+        }
+
+        .process-block {
+            background-color: var(--accent-color);
+        }
+
+        .time-label {
+            position: absolute;
+            bottom: -25px;
+            right: -10px;
+            color: #333;
+            font-size: 0.8rem;
+            font-weight: normal;
+        }
+
+        .start-time {
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            color: #333;
+            font-size: 0.8rem;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            background: #f1f1f1;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>First-Come, First-Served (FCFS)</h1>
+        <a href="index.html" class="nav-link">Back to Home</a>
+    </header>
+
+    <section class="intro-section">
+        <h2>What is FCFS Scheduling?</h2>
+        <p>
+            The <strong>First-Come, First-Served (FCFS)</strong> algorithm is the simplest type of CPU scheduling. As the name suggests, the process that requests the CPU first is allocated the CPU first. It is a <em>non-preemptive</em> algorithm, meaning once a process starts executing, it holds the CPU until it either terminates or performs an I/O operation.
+        </p>
+        
+        <div class="highlight-box">
+            <strong>Key Concept:</strong> Think of it like a queue at a grocery store. The person who gets in line first is served first, regardless of how many items they have.
+        </div>
+
+        <h3>The Convoy Effect</h3>
+        <p>
+            One major disadvantage of FCFS is the <strong>Convoy Effect</strong>. This happens when a CPU-intensive process (long burst time) arrives before several shorter processes. The short processes must wait a long time for the large process to finish, leading to high average waiting times and poor resource utilization.
+        </p>
+    </section>
+
+    <section class="simulator-section">
+        <h2>Interactive Simulator</h2>
+        <p>Add your processes below to see how the FCFS algorithm schedules them in real-time.</p>
+        
+        <div class="input-group">
+            <div class="input-field">
+                <label for="p-id">Process ID</label>
+                <input type="text" id="p-id" placeholder="e.g. P1">
+            </div>
+            <div class="input-field">
+                <label for="arrival-time">Arrival Time</label>
+                <input type="number" id="arrival-time" min="0" value="0">
+            </div>
+            <div class="input-field">
+                <label for="burst-time">Burst Time</label>
+                <input type="number" id="burst-time" min="1" value="5">
+            </div>
+            <button class="btn btn-add" onclick="addProcess()">Add Process</button>
+        </div>
+
+        <div id="process-list-container">
+            <h3>Pending Processes</h3>
+            <table id="input-table">
+                <thead>
+                    <tr>
+                        <th>Process ID</th>
+                        <th>Arrival Time</th>
+                        <th>Burst Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="input-body">
+                </tbody>
+            </table>
+            <button class="btn btn-run" onclick="calculateFCFS()">Run Simulation</button>
+            <button class="btn btn-clear" onclick="clearAll()">Clear All</button>
+        </div>
+    </section>
+
+    <section id="results-section" style="display: none;">
+        <h2>Simulation Results</h2>
+        
+        <h3>Gantt Chart</h3>
+        <div class="gantt-container">
+            <div id="gantt-chart" class="gantt-chart"></div>
+        </div>
+
+        <h3>Performance Metrics</h3>
+        <table id="result-table">
+            <thead>
+                <tr>
+                    <th>Process</th>
+                    <th>Arrival</th>
+                    <th>Burst</th>
+                    <th>Completion</th>
+                    <th>Turnaround</th>
+                    <th>Waiting</th>
+                </tr>
+            </thead>
+            <tbody id="result-body"></tbody>
+        </table>
+
+        <div class="summary-stats">
+            <div id="avg-tat">Average Turnaround Time: 0.00</div>
+            <div id="avg-wt">Average Waiting Time: 0.00</div>
+        </div>
+    </section>
+
+    <footer>
+        <p>Developed by Ismael Adnan Anwer | OS Web Portfolio Project</p>
+    </footer>
+</div>
+
+<script>
+    let processes = [];
+
+    function addProcess() {
+        const id = document.getElementById('p-id').value || `P${processes.length + 1}`;
+        const arrival = parseInt(document.getElementById('arrival-time').value);
+        const burst = parseInt(document.getElementById('burst-time').value);
+
+        if (isNaN(arrival) || isNaN(burst) || burst <= 0 || arrival < 0) {
+            alert("Please enter valid Arrival and Burst times.");
+            return;
+        }
+
+        processes.push({ id, arrival, burst });
+        updateInputTable();
+        
+        document.getElementById('p-id').value = `P${processes.length + 1}`;
+        document.getElementById('arrival-time').value = 0;
+        document.getElementById('burst-time').value = 5;
+    }
+
+    function removeProcess(index) {
+        processes.splice(index, 1);
+        updateInputTable();
+    }
+
+    function updateInputTable() {
+        const body = document.getElementById('input-body');
+        body.innerHTML = '';
+        processes.forEach((p, index) => {
+            const row = `<tr>
+                <td>${p.id}</td>
+                <td>${p.arrival}</td>
+                <td>${p.burst}</td>
+                <td><button onclick="removeProcess(${index})" style="background:none; border:none; color:red; cursor:pointer;">Remove</button></td>
+            </tr>`;
+            body.innerHTML += row;
+        });
+    }
+
+    function clearAll() {
+        processes = [];
+        updateInputTable();
+        document.getElementById('results-section').style.display = 'none';
+    }
+
+    function calculateFCFS() {
+        if (processes.length === 0) {
+            alert("Please add at least one process.");
+            return;
+        }
+
+        const sorted = [...processes].sort((a, b) => a.arrival - b.arrival);
+        
+        let currentTime = 0;
+        const results = [];
+        const gantt = [];
+
+        sorted.forEach(p => {
+            if (currentTime < p.arrival) {
+                gantt.push({ id: 'IDLE', start: currentTime, end: p.arrival, type: 'idle' });
+                currentTime = p.arrival;
+            }
+
+            const startTime = currentTime;
+            const completionTime = startTime + p.burst;
+            const tat = completionTime - p.arrival;
+            const wt = tat - p.burst;
+
+            results.push({
+                ...p,
+                completion: completionTime,
+                turnaround: tat,
+                waiting: wt
+            });
+
+            gantt.push({ id: p.id, start: startTime, end: completionTime, type: 'process' });
+            currentTime = completionTime;
+        });
+
+        displayResults(results, gantt);
+    }
+
+    function displayResults(results, gantt) {
+        document.getElementById('results-section').style.display = 'block';
+        
+        const resultBody = document.getElementById('result-body');
+        resultBody.innerHTML = '';
+        let totalTAT = 0;
+        let totalWT = 0;
+
+        results.forEach(p => {
+            totalTAT += p.turnaround;
+            totalWT += p.waiting;
+            const row = `<tr>
+                <td>${p.id}</td>
+                <td>${p.arrival}</td>
+                <td>${p.burst}</td>
+                <td>${p.completion}</td>
+                <td>${p.turnaround}</td>
+                <td>${p.waiting}</td>
+            </tr>`;
+            resultBody.innerHTML += row;
+        });
+
+        document.getElementById('avg-tat').innerText = `Average Turnaround Time: ${(totalTAT / results.length).toFixed(2)}`;
+        document.getElementById('avg-wt').innerText = `Average Waiting Time: ${(totalWT / results.length).toFixed(2)}`;
+
+        const ganttChart = document.getElementById('gantt-chart');
+        ganttChart.innerHTML = '';
+        
+        const totalDuration = gantt[gantt.length - 1].end;
+
+        gantt.forEach((block, index) => {
+            const width = ((block.end - block.start) / totalDuration) * 100;
+            const div = document.createElement('div');
+            div.className = `gantt-block ${block.type === 'idle' ? 'idle-block' : 'process-block'}`;
+            div.style.width = `${width}%`;
+            
+            if (index === 0) {
+                const startLabel = document.createElement('span');
+                startLabel.className = 'start-time';
+                startLabel.innerText = block.start;
+                div.appendChild(startLabel);
+            }
+
+            const label = document.createElement('span');
+            label.innerText = block.id;
+            div.appendChild(label);
+
+            const endLabel = document.createElement('span');
+            endLabel.className = 'time-label';
+            endLabel.innerText = block.end;
+            div.appendChild(endLabel);
+
+            ganttChart.appendChild(div);
+        });
+
+        document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>

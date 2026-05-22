@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>read() System Call - OS Portfolio</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      text-align: center;
+      padding: 35px 20px;
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 1.1rem;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    section {
+      background: white;
+      margin-bottom: 25px;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    h2 {
+      color: #1e3c72;
+      margin-bottom: 12px;
+    }
+
+    .code-box {
+      background: #1f2937;
+      color: #e5e7eb;
+      padding: 18px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-family: Consolas, monospace;
+      margin-top: 12px;
+      white-space: pre-wrap;
+    }
+
+    .diagram {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .box {
+      flex: 1;
+      min-width: 180px;
+      background: #e8f1ff;
+      border: 2px solid #2a5298;
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .arrow {
+      font-size: 2rem;
+      color: #2a5298;
+      font-weight: bold;
+    }
+
+    .demo-area {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      padding: 15px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      font-size: 1rem;
+      resize: vertical;
+    }
+
+    input {
+      padding: 10px;
+      width: 100%;
+      margin: 10px 0;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    button {
+      background: #2a5298;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 8px;
+    }
+
+    button:hover {
+      background: #1e3c72;
+    }
+
+    .output {
+      background: #f0f8ff;
+      border-left: 6px solid #2a5298;
+      padding: 15px;
+      border-radius: 8px;
+      min-height: 180px;
+      white-space: pre-wrap;
+      font-family: Consolas, monospace;
+    }
+
+    .highlight {
+      background: #fff3cd;
+      padding: 3px 6px;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+
+    ul {
+      margin-left: 25px;
+      margin-top: 10px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      background: #1e3c72;
+      color: white;
+      margin-top: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .demo-area {
+        grid-template-columns: 1fr;
+      }
+
+      .arrow {
+        transform: rotate(90deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>read() System Call</h1>
+    <p>Operating Systems Portfolio Project</p>
+    <a href="index.html" style="display:inline-block;margin-top:12px;color:#93c5fd;text-decoration:none;font-size:14px;">&larr; Back to Home</a>
+  </header>
+
+  <main>
+    <section>
+      <h2>What is read()?</h2>
+      <p>
+       
+        In modern POSIX compliant operating systems, a program that needs to access data from a file stored in a file system uses the <span class="highlight">read()</span> system call. The file is identified by a file descriptor that is normally obtained from a previous call to open. This system call reads in data in bytes, the number of which is specified by the caller, from the file and stores them into a buffer supplied by the calling process.
+      </p>
+      <p>
+        In simple words, <span class="highlight">read()</span> moves data from an input source into the program.
+      </p>
+    </section>
+
+    <section>
+      <h2>Basic Syntax in C</h2>
+      <div class="code-box">ssize_t read(int fd, void *buffer, size_t count);</div>
+      <ul>
+        <li><strong>fd:</strong> File descriptor. For example, 0 means keyboard input.</li>
+        <li><strong>buffer:</strong> Memory location where the data will be stored.</li>
+        <li><strong>count:</strong> Maximum number of bytes to read.</li>
+        <li><strong>return value:</strong> Number of bytes actually read, 0 for end of file, or -1 if an error occurs.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>How read() Works</h2>
+      <div class="diagram">
+        <div class="box">Input Source<br>File / Keyboard</div>
+        <div class="arrow">→</div>
+        <div class="box">Operating System<br>read()</div>
+        <div class="arrow">→</div>
+        <div class="box">Program Buffer<br>Memory</div>
+      </div>
+    </section>
+
+    <section>
+      <h2> Read() system call simulation </h2>
+      <p>
+        This demo simulates how <span class="highlight">read()</span> reads only a specific number of bytes from an input source.
+      </p>
+
+      <div class="demo-area">
+        <div>
+          <label><strong>Input Source:</strong></label>
+          <textarea id="inputText">Operating Systems use system calls like read() to communicate with hardware and files.</textarea>
+
+          <label><strong>Number of bytes to read:</strong></label>
+          <input type="number" id="byteCount" value="20" min="1" />
+
+          <button onclick="simulateRead()">Simulate read()</button>
+        </div>
+
+        <div>
+          <strong>Output Buffer:</strong>
+          <div class="output" id="outputBox">Click the button to simulate read().</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Example C Program</h2>
+      <div class="code-box">#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main() {
+    char buffer[50];
+    int bytesRead;
+
+    printf("Enter text: ");
+
+    bytesRead = read(0, buffer, 50);
+
+    printf("You entered: ");
+    write(1, buffer, bytesRead);
+
+    return 0;
+}</div>
+      <p>
+        In this example, <strong>read(0, buffer, 50)</strong> reads up to 50 bytes from the keyboard and stores them in the buffer.
+      </p>
+    </section>
+
+    <section>
+      <h2>Why is read() Important?</h2>
+      <ul>
+        <li>It allows programs to receive input from files and devices.</li>
+        <li>It is a low-level system call used by many higher-level functions.</li>
+        <li>It shows how user programs communicate with the operating system kernel.</li>
+        <li>It is commonly used with other system calls such as open(), write(), and close().</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p> Operating Systems Portfolio assignment - Topic 29: read()</p>
+  </footer>
+
+  <script>
+    function simulateRead() {
+      const inputText = document.getElementById("inputText").value;
+      const byteCount = Number(document.getElementById("byteCount").value);
+      const outputBox = document.getElementById("outputBox");
+
+      if (byteCount <= 0 || isNaN(byteCount)) {
+        outputBox.textContent = "Error: Please enter a valid positive number.";
+        return;
+      }
+
+      const readData = inputText.slice(0, byteCount);
+      const actualBytes = readData.length;
+
+      outputBox.textContent =
+        "read() requested bytes: " + byteCount + "\n" +
+        "Actual bytes read: " + actualBytes + "\n\n" +
+        "Data stored in buffer:\n" +
+        readData;
+    }
+  </script>
+</body>
+</html>

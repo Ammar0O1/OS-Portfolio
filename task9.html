@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPC – Interprocess Communication</title>
+<style>
+  body {
+    font-family: sans-serif;
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+    background: #f5f5f5;
+    color: #222;
+  }
+  a { color: #2563eb; }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  h2 { font-size: 1.05rem; margin-top: 28px; margin-bottom: 8px; border-bottom: 2px solid #2563eb; padding-bottom: 4px; }
+  p, li { font-size: 0.92rem; line-height: 1.6; }
+
+  .tabs { display: flex; gap: 8px; margin: 24px 0 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 7px 16px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .tab-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+  .tab { display: none; padding: 20px; background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-top: 8px; }
+  .tab.active { display: block; }
+
+  .buffer { display: flex; gap: 6px; margin: 12px 0; }
+  .slot {
+    width: 48px; height: 48px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: bold;
+    background: #f9f9f9;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .slot.filled { background: #dbeafe; border-color: #2563eb; color: #1d4ed8; }
+
+  .channel { display: flex; align-items: center; gap: 12px; margin: 14px 0; flex-wrap: wrap; }
+  .proc-box {
+    padding: 10px 18px;
+    border: 2px solid #2563eb;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.85rem;
+    background: #eff6ff;
+    color: #1d4ed8;
+    min-width: 70px;
+    text-align: center;
+  }
+
+  .mailbox-q {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    min-height: 30px; align-items: center; margin: 8px 0;
+  }
+  .msg-chip {
+    background: #ede9fe; border: 1px solid #8b5cf6;
+    color: #5b21b6; border-radius: 4px;
+    padding: 3px 10px; font-size: 0.78rem; font-weight: bold;
+  }
+
+  .log {
+    background: #1e1e1e; color: #d4d4d4;
+    border-radius: 6px; padding: 10px 12px;
+    font-family: monospace; font-size: 0.8rem;
+    height: 90px; overflow-y: auto; margin-top: 10px;
+    white-space: pre-wrap;
+  }
+
+  button {
+    padding: 7px 14px;
+    border: 1px solid #2563eb;
+    background: #fff;
+    color: #2563eb;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    margin: 4px 4px 4px 0;
+  }
+  button:hover { background: #2563eb; color: #fff; }
+
+  .info-box {
+    background: #f0f9ff;
+    border-left: 4px solid #2563eb;
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin: 10px 0;
+    font-size: 0.85rem;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+  th { background: #2563eb; color: #fff; padding: 9px; text-align: left; }
+  td { padding: 9px; border-bottom: 1px solid #eee; }
+  tr:nth-child(even) td { background: #f9f9f9; }
+</style>
+</head>
+<body>
+
+<a href="index.html">← Back to home</a>
+<h1>Interprocess Communication (IPC)</h1>
+<p>How cooperating processes share data. Two main models: <strong>Shared Memory</strong> and <strong>Message Passing</strong>.</p>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('overview', this)">Overview</button>
+  <button class="tab-btn" onclick="showTab('shared', this)">Shared Memory</button>
+  <button class="tab-btn" onclick="showTab('messages', this)">Message Passing</button>
+  <button class="tab-btn" onclick="showTab('compare', this)">Compare</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="tab active" id="tab-overview">
+  <h2>What is IPC?</h2>
+  <p>A process is <strong>independent</strong> if it doesn't share data with others. A process is <strong>cooperating</strong> if it can affect or be affected by other processes. Cooperating processes need IPC.</p>
+  <p>Reasons for cooperation:</p>
+  <ul>
+    <li><strong>Information sharing</strong> — multiple apps may need the same data</li>
+    <li><strong>Computation speedup</strong> — split a task across multiple cores</li>
+    <li><strong>Modularity</strong> — divide the system into separate processes</li>
+  </ul>
+
+  <h2>The Two IPC Models</h2>
+  <div class="info-box">
+    <strong>Shared Memory</strong> — processes establish a common memory region and read/write to it directly. Fast, but they must synchronise manually to avoid race conditions.
+  </div>
+  <div class="info-box" style="border-color:#7c3aed; background:#faf5ff;">
+    <strong>Message Passing</strong> — processes exchange messages via <code>send()</code> and <code>receive()</code> calls handled by the kernel. Safer and works across a network.
+  </div>
+</div>
+
+<!-- SHARED MEMORY -->
+<div class="tab" id="tab-shared">
+  <h2>Producer – Consumer Problem</h2>
+  <p>The <strong>producer</strong> writes items into a circular buffer in shared memory. The <strong>consumer</strong> reads them. Max <strong>4 items</strong> at once (BUFFER_SIZE − 1).</p>
+
+  <div class="channel">
+    <div class="proc-box">Producer</div>
+    <span>→</span>
+    <div>
+      <div style="font-size:0.78rem;color:#555;">in=<span id="in">0</span> &nbsp; out=<span id="out">0</span></div>
+      <div class="buffer">
+        <div class="slot" id="s0">—</div>
+        <div class="slot" id="s1">—</div>
+        <div class="slot" id="s2">—</div>
+        <div class="slot" id="s3">—</div>
+        <div class="slot" id="s4">—</div>
+      </div>
+      <div style="font-size:0.8rem;color:#555;" id="buf-status">Empty</div>
+    </div>
+    <span>→</span>
+    <div class="proc-box" style="border-color:#dc2626;background:#fef2f2;color:#dc2626;">Consumer</div>
+  </div>
+
+  <button onclick="produce()">Produce Item</button>
+  <button onclick="consume()" style="border-color:#dc2626;color:#dc2626;">Consume Item</button>
+  <button onclick="resetBuf()" style="border-color:#999;color:#666;">Reset</button>
+  <div class="log" id="sm-log"></div>
+</div>
+
+<!-- MESSAGE PASSING -->
+<div class="tab" id="tab-messages">
+  <h2>Direct Communication</h2>
+  <p style="font-size:0.85rem;">Each process explicitly names the other. One link per pair of processes.</p>
+  <div class="channel">
+    <div class="proc-box">Process P</div>
+    <span>──── msg ────→</span>
+    <div class="proc-box" style="border-color:#dc2626;background:#fef2f2;color:#dc2626;">Process Q</div>
+  </div>
+  <label style="font-size:0.82rem;">Mode:
+    <select id="mode-sel" style="padding:4px 8px;border-radius:4px;border:1px solid #ccc;font-size:0.82rem;margin-left:6px;">
+      <option value="blocking">Blocking</option>
+      <option value="nonblocking">Non-Blocking</option>
+    </select>
+  </label><br>
+  <button onclick="sendDirect()" style="margin-top:8px;">send(Q, message)</button>
+  <div class="log" id="direct-log"></div>
+
+  <h2 style="border-color:#7c3aed;margin-top:28px;">Indirect Communication — Mailbox</h2>
+  <p style="font-size:0.85rem;">Messages go to a shared mailbox. Any process with access can receive from it.</p>
+  <div class="channel">
+    <div class="proc-box">P1</div>
+    <span>→</span>
+    <div style="text-align:center;">
+      <div style="font-size:0.78rem;color:#555;margin-bottom:4px;">📬 Mailbox A</div>
+      <div class="mailbox-q" id="mq"><span style="color:#aaa;font-size:0.78rem;">empty</span></div>
+    </div>
+    <span>→</span>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div class="proc-box">P2</div>
+      <div class="proc-box" style="border-color:#7c3aed;background:#faf5ff;color:#7c3aed;">P3</div>
+    </div>
+  </div>
+  <button onclick="sendMB()">P1: send(A, msg)</button>
+  <button onclick="recvMB('P2')">P2: receive(A)</button>
+  <button onclick="recvMB('P3')" style="border-color:#7c3aed;color:#7c3aed;">P3: receive(A)</button>
+  <div class="log" id="mb-log"></div>
+</div>
+
+<!-- COMPARE -->
+<div class="tab" id="tab-compare">
+  <h2>Shared Memory vs Message Passing</h2>
+  <table>
+    <thead><tr><th>Property</th><th>Shared Memory</th><th>Message Passing</th></tr></thead>
+    <tbody>
+      <tr><td>Speed</td><td>Fast — no kernel per transfer</td><td>Slower — kernel every call</td></tr>
+      <tr><td>Synchronisation</td><td>Manual (race condition risk)</td><td>Built-in</td></tr>
+      <tr><td>Scope</td><td>Same machine only</td><td>Same machine or network</td></tr>
+      <tr><td>Best for</td><td>High-throughput local tasks</td><td>Distributed systems</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="border-color:#7c3aed;">Blocking vs Non-Blocking</h2>
+  <table>
+    <thead><tr><th>Type</th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr><td>Blocking Send</td><td>Sender halts until message is received</td></tr>
+      <tr><td>Non-Blocking Send</td><td>Sender continues immediately</td></tr>
+      <tr><td>Blocking Receive</td><td>Receiver waits until a message arrives</td></tr>
+      <tr><td>Non-Blocking Receive</td><td>Receiver gets message or null right away</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// --- Shared Memory ---
+const SIZE = 5;
+let buf = new Array(SIZE).fill(null), inP = 0, outP = 0, count = 0, itemId = 1;
+
+function smLog(msg) {
+  const log = document.getElementById('sm-log');
+  log.textContent += '> ' + msg + '\n';
+  log.scrollTop = log.scrollHeight;
+}
+
+function renderBuf() {
+  for (let i = 0; i < SIZE; i++) {
+    const s = document.getElementById('s' + i);
+    s.textContent = buf[i] ?? '—';
+    s.className = 'slot' + (buf[i] ? ' filled' : '');
+  }
+  document.getElementById('in').textContent = inP;
+  document.getElementById('out').textContent = outP;
+  const max = SIZE - 1;
+  document.getElementById('buf-status').textContent =
+    count === 0 ? 'Empty' : count >= max ? 'Full (' + count + '/' + max + ')' : count + '/' + max + ' items';
+}
+
+function produce() {
+  if (count >= SIZE - 1) { smLog('Producer BLOCKED — buffer full'); return; }
+  const item = 'I' + itemId++;
+  buf[inP] = item;
+  inP = (inP + 1) % SIZE;
+  count++;
+  smLog('Producer wrote ' + item);
+  renderBuf();
+}
+
+function consume() {
+  if (count === 0) { smLog('Consumer BLOCKED — buffer empty'); return; }
+  const item = buf[outP];
+  buf[outP] = null;
+  outP = (outP + 1) % SIZE;
+  count--;
+  smLog('Consumer read ' + item);
+  renderBuf();
+}
+
+function resetBuf() {
+  buf = new Array(SIZE).fill(null);
+  inP = 0; outP = 0; count = 0; itemId = 1;
+  document.getElementById('sm-log').textContent = '';
+  renderBuf();
+}
+
+renderBuf();
+
+// --- Direct ---
+let dId = 1;
+function dLog(msg) {
+  const log = document.getElementById('direct-log');
+  log.textContent += '> ' + msg + '\n';
+  log.scrollTop = log.scrollHeight;
+}
+
+function sendDirect() {
+  const blocking = document.getElementById('mode-sel').value === 'blocking';
+  const label = 'msg_' + dId++;
+  dLog('P: send(Q, ' + label + ')');
+  if (blocking) {
+    dLog('P: BLOCKED — waiting for Q...');
+    setTimeout(() => { dLog('Q: receive(P) → got ' + label); dLog('P: UNBLOCKED'); }, 1000);
+  } else {
+    dLog('P: continues (non-blocking)');
+    setTimeout(() => { dLog('Q: receive(P) → got ' + label); }, 800);
+  }
+}
+
+// --- Mailbox ---
+let mbQ = [], mbId = 1;
+function mbLog(msg) {
+  const log = document.getElementById('mb-log');
+  log.textContent += '> ' + msg + '\n';
+  log.scrollTop = log.scrollHeight;
+}
+function renderMQ() {
+  const el = document.getElementById('mq');
+  el.innerHTML = mbQ.length === 0
+    ? '<span style="color:#aaa;font-size:0.78rem;">empty</span>'
+    : mbQ.map(m => `<span class="msg-chip">${m}</span>`).join('');
+}
+function sendMB() {
+  const label = 'M' + mbId++;
+  mbQ.push(label);
+  renderMQ();
+  mbLog('P1: send(A, ' + label + ') → queued');
+}
+function recvMB(who) {
+  if (mbQ.length === 0) { mbLog(who + ': receive(A) → BLOCKED (empty)'); return; }
+  const item = mbQ.shift();
+  renderMQ();
+  mbLog(who + ': receive(A) → got ' + item);
+}
+renderMQ();
+</script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 8 - Context Switching</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0f1419;
+            color: #c5cdd6;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .page { max-width: 820px; margin: 0 auto; }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 20px;
+            border-bottom: 1px solid #1e2832;
+            margin-bottom: 30px;
+        }
+
+        .top-bar a {
+            color: #6a7785;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .top-bar a:hover { color: #5eb3d1; }
+
+        .badge {
+            font-size: 12px;
+            color: #5eb3d1;
+            background: rgba(94, 179, 209, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        h1 { font-size: 32px; color: #fff; margin-bottom: 10px; }
+
+        .intro { color: #6a7785; font-size: 15px; margin-bottom: 30px; }
+
+        h2 {
+            color: #5eb3d1;
+            font-size: 18px;
+            margin-top: 30px;
+            margin-bottom: 12px;
+        }
+
+        p { margin-bottom: 14px; font-size: 15px; }
+
+        .box {
+            background: #18222d;
+            border-left: 3px solid #5eb3d1;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .box p:last-child { margin-bottom: 0; }
+
+        .stage {
+            background: #18222d;
+            border: 1px solid #1e2832;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+
+        .stage-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .stage-row { grid-template-columns: 1fr; }
+        }
+
+        .stage-col h4 {
+            font-size: 11px;
+            color: #6a7785;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .pcb {
+            background: #0f1419;
+            border: 1px solid #1e2832;
+            border-radius: 6px;
+            padding: 12px;
+            min-height: 140px;
+            transition: all 0.4s;
+        }
+
+        .pcb.active-write {
+            border-color: #f0a050;
+            box-shadow: 0 0 12px rgba(240, 160, 80, 0.3);
+        }
+
+        .pcb.active-read {
+            border-color: #6ed09c;
+            box-shadow: 0 0 12px rgba(110, 208, 156, 0.3);
+        }
+
+        .pcb-label {
+            font-family: monospace;
+            font-size: 11px;
+            color: #6a7785;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .pcb-data {
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.7;
+            color: #c5cdd6;
+        }
+
+        .pcb-data span { display: block; }
+
+        .cpu {
+            background: #0f1419;
+            border: 2px solid #5eb3d1;
+            border-radius: 6px;
+            padding: 12px;
+            min-height: 140px;
+            transition: all 0.4s;
+        }
+
+        .cpu-label {
+            font-family: monospace;
+            font-size: 11px;
+            color: #5eb3d1;
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .cpu-running {
+            background: rgba(94, 179, 209, 0.1);
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 13px;
+            color: #fff;
+            font-weight: bold;
+            transition: all 0.4s;
+        }
+
+        .cpu-running.idle {
+            background: rgba(106, 119, 133, 0.1);
+            color: #6a7785;
+        }
+
+        .cpu-data {
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.7;
+            color: #c5cdd6;
+        }
+
+        .cpu-data span { display: block; }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #5eb3d1;
+            color: #0f1419;
+            border: none;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        button:hover { background: #4a9bb8; }
+
+        button.secondary {
+            background: #1e2832;
+            color: #c5cdd6;
+        }
+
+        button.secondary:hover { background: #2a3744; }
+
+        button:disabled {
+            background: #1e2832;
+            color: #4a5666;
+            cursor: not-allowed;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 13px;
+            color: #6a7785;
+            margin-top: 14px;
+            min-height: 20px;
+            font-family: monospace;
+        }
+
+        .status.highlight { color: #5eb3d1; }
+        .status.save { color: #f0a050; }
+        .status.load { color: #6ed09c; }
+
+        .steps {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+
+        .steps li {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .warning {
+            background: rgba(240, 160, 80, 0.08);
+            border-left: 3px solid #f0a050;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .warning b { color: #f0a050; }
+
+        footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #1e2832;
+            text-align: center;
+            color: #4a5666;
+            font-size: 13px;
+        }
+
+        footer a { color: #5eb3d1; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <div class="top-bar">
+        <a href="index.html">&larr; Back to Home</a>
+        <div class="badge">Task 08</div>
+    </div>
+
+    <h1>Context Switching</h1>
+    <p class="intro">How the operating system swaps one process out of the CPU and brings another one in, without losing any work.</p>
+
+    <h2>What is Context Switching?</h2>
+    <div class="box">
+        <p>Context switching is when the CPU stops running one process and starts running another. To do this safely, the OS must save the current state of the running process, then load the state of the new process. This way, the old process can continue later from exactly where it stopped.</p>
+    </div>
+
+    <p>The "state" here means everything the CPU was working on: register values, program counter, flags, and other important info. All this data is stored inside the Process Control Block (PCB).</p>
+
+    <h2>How it works (step by step)</h2>
+    <ol class="steps">
+        <li>Process A is running on the CPU.</li>
+        <li>An interrupt or system call happens (for example, the time slice ends).</li>
+        <li>The OS saves Process A's state into its PCB (registers, program counter, flags).</li>
+        <li>The OS loads Process B's state from its PCB into the CPU.</li>
+        <li>Process B starts running from where it last stopped.</li>
+    </ol>
+
+    <h2>See it in action</h2>
+    <p>Click "Run Switch" to watch a context switch from Process A to Process B.</p>
+
+    <div class="stage">
+        <div class="stage-row">
+            <div class="stage-col">
+                <h4>PCB of Process A</h4>
+                <div class="pcb" id="pcbA">
+                    <div class="pcb-label">PCB_A</div>
+                    <div class="pcb-data" id="pcbAData"></div>
+                </div>
+            </div>
+            <div class="stage-col">
+                <h4>CPU</h4>
+                <div class="cpu">
+                    <div class="cpu-label">CPU CORE</div>
+                    <div class="cpu-running idle" id="cpuRunning">Idle</div>
+                    <div class="cpu-data" id="cpuData"></div>
+                </div>
+            </div>
+            <div class="stage-col">
+                <h4>PCB of Process B</h4>
+                <div class="pcb" id="pcbB">
+                    <div class="pcb-label">PCB_B</div>
+                    <div class="pcb-data" id="pcbBData"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status" id="status">Click "Start A" to begin.</div>
+
+        <div class="controls">
+            <button onclick="startA()" id="btnStart">Start A</button>
+            <button onclick="runSwitch()" id="btnSwitch" disabled>Run Switch</button>
+            <button class="secondary" onclick="reset()">Reset</button>
+        </div>
+    </div>
+
+    <h2>The Hidden Cost</h2>
+    <div class="warning">
+        <p><b>Overhead:</b> While the OS is doing a context switch, the CPU is not doing any useful work for any program. This wasted time is called "pure overhead" or dispatch latency.</p>
+    </div>
+
+    <p>This means that switching too often actually slows down the system. Modern operating systems try hard to make context switching as fast as possible, sometimes using special hardware like multiple register sets to speed it up.</p>
+
+    <h2>When does it happen?</h2>
+    <p>A context switch happens whenever:</p>
+    <ol class="steps">
+        <li>A higher priority process arrives (preemption).</li>
+        <li>The running process's time slice ends.</li>
+        <li>The running process makes a system call or asks for I/O.</li>
+        <li>An interrupt happens (like a keyboard press or a disk finishing).</li>
+    </ol>
+
+    <footer>
+        Task 8: Context Switching<br>
+        Created by Blnd Ismael Ali<br><br>
+        <a href="index.html">&larr; Back to Home</a>
+    </footer>
+
+</div>
+
+<script>
+    let stateA = { pc: '0x004A2F10', eax: '0x1A', ebx: '0x07', flags: 'ZF=1' };
+    let stateB = { pc: '0x00B12C44', eax: '0x63', ebx: '0x2A', flags: 'CF=1' };
+
+    const cpuRunning = document.getElementById('cpuRunning');
+    const cpuData = document.getElementById('cpuData');
+    const pcbA = document.getElementById('pcbA');
+    const pcbB = document.getElementById('pcbB');
+    const pcbAData = document.getElementById('pcbAData');
+    const pcbBData = document.getElementById('pcbBData');
+    const status = document.getElementById('status');
+    const btnStart = document.getElementById('btnStart');
+    const btnSwitch = document.getElementById('btnSwitch');
+
+    function renderCpu(name, data, idle) {
+        if (idle) {
+            cpuRunning.className = 'cpu-running idle';
+            cpuRunning.textContent = 'Idle';
+            cpuData.innerHTML = '<span>PC: ----</span><span>EAX: ----</span><span>EBX: ----</span><span>flags: ----</span>';
+        } else {
+            cpuRunning.className = 'cpu-running';
+            cpuRunning.textContent = 'Running ' + name;
+            cpuData.innerHTML =
+                '<span>PC: ' + data.pc + '</span>' +
+                '<span>EAX: ' + data.eax + '</span>' +
+                '<span>EBX: ' + data.ebx + '</span>' +
+                '<span>flags: ' + data.flags + '</span>';
+        }
+    }
+
+    function renderPcb(which, state, stateLabel) {
+        const el = which === 'A' ? pcbAData : pcbBData;
+        el.innerHTML =
+            '<span>state: ' + stateLabel + '</span>' +
+            '<span>PC: ' + state.pc + '</span>' +
+            '<span>EAX: ' + state.eax + '</span>' +
+            '<span>EBX: ' + state.ebx + '</span>' +
+            '<span>flags: ' + state.flags + '</span>';
+    }
+
+    function setStatus(text, cls) {
+        status.className = 'status' + (cls ? ' ' + cls : '');
+        status.textContent = text;
+    }
+
+    function startA() {
+        renderCpu('A', stateA, false);
+        renderPcb('A', stateA, 'running');
+        renderPcb('B', stateB, 'ready');
+        setStatus('Process A is now running on the CPU.', 'highlight');
+        btnStart.disabled = true;
+        btnSwitch.disabled = false;
+    }
+
+    async function runSwitch() {
+        btnSwitch.disabled = true;
+
+        setStatus('1. Interrupt! Time slice ended.', 'highlight');
+        await wait(1200);
+
+        setStatus('2. Saving Process A state into PCB_A...', 'save');
+        pcbA.classList.add('active-write');
+        await wait(1500);
+        renderPcb('A', stateA, 'ready');
+        pcbA.classList.remove('active-write');
+
+        renderCpu('', null, true);
+        setStatus('CPU is idle during the switch (overhead).', 'highlight');
+        await wait(1000);
+
+        setStatus('3. Loading Process B state from PCB_B...', 'load');
+        pcbB.classList.add('active-read');
+        await wait(1500);
+        renderCpu('B', stateB, false);
+        renderPcb('B', stateB, 'running');
+        pcbB.classList.remove('active-read');
+
+        setStatus('Done. Process B is now running.', 'highlight');
+    }
+
+    function reset() {
+        renderCpu('', null, true);
+        renderPcb('A', stateA, 'ready');
+        renderPcb('B', stateB, 'ready');
+        setStatus('Click "Start A" to begin.', '');
+        btnStart.disabled = false;
+        btnSwitch.disabled = true;
+    }
+
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    reset();
+</script>
+
+</body>
+</html>
