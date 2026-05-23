@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Topic 4 - Non Preemptive Priority Scheduling</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+      background: #f3f6f4;
+      color: #1f2933;
+    }
+
+    .top {
+      background: linear-gradient(120deg, #12372a, #436850);
+      color: white;
+      padding: 34px 18px;
+      text-align: center;
+      border-bottom: 6px solid #adbc9f;
+    }
+
+    .top h1 {
+      margin: 0;
+      font-size: 32px;
+      letter-spacing: 0.5px;
+    }
+
+    .top p {
+      margin: 10px 0 0;
+      font-size: 15px;
+      opacity: 0.95;
+    }
+
+    .page {
+      width: min(1050px, 94%);
+      margin: 24px auto 40px;
+    }
+
+    .box {
+      background: white;
+      border: 1px solid #d8e0d2;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 6px 16px rgba(18, 55, 42, 0.08);
+    }
+
+    h2 {
+      color: #12372a;
+      margin-top: 0;
+      border-bottom: 2px solid #e7eee4;
+      padding-bottom: 8px;
+    }
+
+    .small-note {
+      background: #fbf7e8;
+      border: 1px solid #ead99b;
+      border-left: 7px solid #d6a319;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-top: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th, td {
+      border: 1px solid #cbd5c0;
+      padding: 11px;
+      text-align: center;
+    }
+
+    th {
+      background: #436850;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background: #f6f8f3;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 7px;
+      border: 1px solid #b7c3b0;
+      font-size: 14px;
+    }
+
+    .buttons {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 11px 15px;
+      border: none;
+      border-radius: 8px;
+      background: #12372a;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #0b241b;
+    }
+
+    .light-btn {
+      background: #6b7280;
+    }
+
+    .chart {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 15px;
+    }
+
+    .piece {
+      min-width: 95px;
+      padding: 16px 10px;
+      text-align: center;
+      border-radius: 8px;
+      background: #adbc9f;
+      color: #10251d;
+      font-weight: bold;
+      border: 2px solid #436850;
+    }
+
+    .times {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .time {
+      min-width: 95px;
+      text-align: center;
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .answer {
+      background: #eef7ee;
+      border: 1px solid #b7d3b2;
+      border-radius: 10px;
+      padding: 13px;
+      margin-top: 12px;
+    }
+
+    ul li { margin-bottom: 7px; }
+
+    .footer {
+      text-align: center;
+      margin-top: 18px;
+      color: #586456;
+      font-size: 14px;
+    }
+
+    @media (max-width: 750px) {
+      .form-row { grid-template-columns: 1fr; }
+      .top h1 { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h1>Priority Scheduling: Non-Preemptive</h1>
+    <p>Operating Systems Web Portfolio | Topic 4 | Lawand Chato Muhamed Amin</p>
+  </div>
+
+  <main class="page">
+    <section class="box">
+      <h2>Idea of the Algorithm</h2>
+      <p>
+        In priority scheduling, the operating system gives every process a priority value.
+        When the CPU becomes free, it looks at the processes that already arrived and selects
+        the one with the best priority. In this page, priority number <b>1</b> is the strongest,
+        then <b>2</b>, then <b>3</b>, and so on.
+      </p>
+      <div class="small-note">
+        <b>Non-preemptive rule:</b> after a process gets the CPU, it continues until its burst time finishes.
+        It will not be interrupted in the middle.
+      </div>
+    </section>
+
+    <section class="box">
+      <h2>Example Processes</h2>
+      <p>
+        Press the button to arrange the processes based on non-preemptive priority scheduling.
+        The result will show the running order, completion time, waiting time, and turnaround time.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Process</th>
+            <th>Arrival Time</th>
+            <th>Burst Time</th>
+            <th>Priority</th>
+          </tr>
+        </thead>
+        <tbody id="processBody"></tbody>
+      </table>
+
+      <div class="buttons">
+        <button onclick="runPriority()">Calculate Schedule</button>
+        <button class="light-btn" onclick="restoreExample()">Restore Original Example</button>
+      </div>
+
+      <div id="chartOutput"></div>
+      <div id="tableOutput"></div>
+    </section>
+
+    <section class="box">
+      <h2>Add Your Own Process</h2>
+      <p>You can add another process to test how the order changes.</p>
+      <div class="form-row">
+        <div>
+          <label for="newName">Process Name</label>
+          <input id="newName" placeholder="P5">
+        </div>
+        <div>
+          <label for="newArrival">Arrival Time</label>
+          <input id="newArrival" type="number" min="0" placeholder="0">
+        </div>
+        <div>
+          <label for="newBurst">Burst Time</label>
+          <input id="newBurst" type="number" min="1" placeholder="2">
+        </div>
+        <div>
+          <label for="newPriority">Priority</label>
+          <input id="newPriority" type="number" min="1" placeholder="1">
+        </div>
+      </div>
+      <div class="buttons">
+        <button onclick="insertProcess()">Add to Table</button>
+      </div>
+    </section>
+
+    <section class="box">
+      <h2>Simple Notes</h2>
+      <ul>
+        <li><b>Ready queue:</b> processes that arrived and are waiting for the CPU.</li>
+        <li><b>Waiting time:</b> start time minus arrival time.</li>
+        <li><b>Turnaround time:</b> completion time minus arrival time.</li>
+        <li><b>Problem:</b> weak priority processes can wait for a long time. This is called starvation.</li>
+        <li><b>Possible solution:</b> aging, where waiting processes slowly get better priority.</li>
+      </ul>
+    </section>
+
+    <div class="footer">
+      Created for Operating Systems assignment - Topic 4
+    </div>
+  </main>
+
+  <script>
+    let processList = [
+      { id: "P1", arrival: 0, burst: 5, priority: 3 },
+      { id: "P2", arrival: 1, burst: 2, priority: 1 },
+      { id: "P3", arrival: 2, burst: 4, priority: 2 },
+      { id: "P4", arrival: 4, burst: 1, priority: 4 }
+    ];
+
+    function drawProcesses() {
+      const body = document.getElementById("processBody");
+      body.innerHTML = "";
+
+      for (let p of processList) {
+        body.innerHTML += `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.arrival}</td>
+            <td>${p.burst}</td>
+            <td>${p.priority}</td>
+          </tr>
+        `;
+      }
+    }
+
+    function insertProcess() {
+      const id = document.getElementById("newName").value.trim();
+      const arrival = Number(document.getElementById("newArrival").value);
+      const burst = Number(document.getElementById("newBurst").value);
+      const priority = Number(document.getElementById("newPriority").value);
+
+      if (id === "" || arrival < 0 || burst <= 0 || priority <= 0) {
+        alert("Please fill all fields with correct values.");
+        return;
+      }
+
+      processList.push({ id, arrival, burst, priority });
+      drawProcesses();
+
+      document.getElementById("newName").value = "";
+      document.getElementById("newArrival").value = "";
+      document.getElementById("newBurst").value = "";
+      document.getElementById("newPriority").value = "";
+    }
+
+    function runPriority() {
+      let waitingList = processList.map(item => ({ ...item }));
+      let finished = [];
+      let gantt = [];
+      let currentTime = 0;
+
+      while (waitingList.length > 0) {
+        let available = waitingList.filter(p => p.arrival <= currentTime);
+
+        if (available.length === 0) {
+          currentTime = Math.min(...waitingList.map(p => p.arrival));
+          available = waitingList.filter(p => p.arrival <= currentTime);
+        }
+
+        available.sort((a, b) => {
+          if (a.priority !== b.priority) return a.priority - b.priority;
+          if (a.arrival !== b.arrival) return a.arrival - b.arrival;
+          return a.id.localeCompare(b.id);
+        });
+
+        const selected = available[0];
+        const start = currentTime;
+        const finish = start + selected.burst;
+
+        gantt.push({ name: selected.id, start: start, finish: finish });
+
+        finished.push({
+          ...selected,
+          start: start,
+          finish: finish,
+          waiting: start - selected.arrival,
+          turnaround: finish - selected.arrival
+        });
+
+        currentTime = finish;
+        waitingList = waitingList.filter(p => p.id !== selected.id);
+      }
+
+      showChart(gantt);
+      showFinalTable(finished);
+    }
+
+    function showChart(gantt) {
+      let html = `<h3>Gantt Chart</h3><div class="chart">`;
+      for (let part of gantt) {
+        html += `<div class="piece">${part.name}</div>`;
+      }
+      html += `</div><div class="times">`;
+      for (let part of gantt) {
+        html += `<div class="time">${part.start} to ${part.finish}</div>`;
+      }
+      html += `</div>`;
+      document.getElementById("chartOutput").innerHTML = html;
+    }
+
+    function showFinalTable(finished) {
+      let totalWait = 0;
+      let totalTurn = 0;
+
+      let html = `
+        <h3>Final Results</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Process</th>
+              <th>Start</th>
+              <th>Completion</th>
+              <th>Waiting</th>
+              <th>Turnaround</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for (let p of finished) {
+        totalWait += p.waiting;
+        totalTurn += p.turnaround;
+        html += `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.start}</td>
+            <td>${p.finish}</td>
+            <td>${p.waiting}</td>
+            <td>${p.turnaround}</td>
+          </tr>
+        `;
+      }
+
+      const averageWaiting = totalWait / finished.length;
+      const averageTurnaround = totalTurn / finished.length;
+
+      html += `
+          </tbody>
+        </table>
+        <div class="answer">
+          <b>Average Waiting Time:</b> ${averageWaiting.toFixed(2)}<br>
+          <b>Average Turnaround Time:</b> ${averageTurnaround.toFixed(2)}
+        </div>
+      `;
+
+      document.getElementById("tableOutput").innerHTML = html;
+    }
+
+    function restoreExample() {
+      processList = [
+        { id: "P1", arrival: 0, burst: 5, priority: 3 },
+        { id: "P2", arrival: 1, burst: 2, priority: 1 },
+        { id: "P3", arrival: 2, burst: 4, priority: 2 },
+        { id: "P4", arrival: 4, burst: 1, priority: 4 }
+      ];
+      drawProcesses();
+      document.getElementById("chartOutput").innerHTML = "";
+      document.getElementById("tableOutput").innerHTML = "";
+    }
+
+    drawProcesses();
+  </script>
+</body>
+</html>
